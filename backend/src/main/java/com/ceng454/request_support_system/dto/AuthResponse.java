@@ -1,32 +1,22 @@
 package com.ceng454.request_support_system.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthResponse {
-
     private String token;
-    private Long id;
+    private String type = "Bearer";
+    private Long userId;
+    private String tcNumber;
     private String email;
-    private String name;
-
-    public AuthResponse(String token, Long id, String email, String name) {
-        this.token = token;
-        this.id = id;
-        this.email = email;
-        this.name = name;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getName() {
-        return name;
-    }
+    private String firstName;
+    private String lastName;
+    private String role;
+    private String message;
 }

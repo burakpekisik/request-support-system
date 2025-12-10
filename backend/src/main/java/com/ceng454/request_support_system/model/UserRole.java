@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Priority {
-    private Integer id;
-    private String name;        // Düşük, Normal, Yüksek, Kritik
-    private Integer level;      // 1, 2, 3, 4
-    private String colorCode;   // #28a745
+public class UserRole {
+    private Long userId;    // user_id
+    private Integer roleId; // role_id
 }

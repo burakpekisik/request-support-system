@@ -1,19 +1,24 @@
 package com.ceng454.request_support_system.repository;
 
 import com.ceng454.request_support_system.model.User;
-import lombok.RequiredArgsConstructor;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import java.util.List;
+
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.Optional;
 
 @Repository
-@RequiredArgsConstructor
 public class UserRepository {
-    private final JdbcTemplate jdbcTemplate;
- 
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private final RowMapper<User> userRowMapper = (rs, rowNum) -> {
         User user = new User();
         user.setId(rs.getLong("id"));
@@ -24,49 +29,85 @@ public class UserRepository {
         user.setLastName(rs.getString("last_name"));
         user.setPhoneNumber(rs.getString("phone_number"));
         user.setAvatarUrl(rs.getString("avatar_url"));
+        
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        if (createdAt != null) {
+            user.setCreatedAt(createdAt.toLocalDateTime());
+        }
+        
         user.setIsActive(rs.getBoolean("is_active"));
-        user.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         return user;
     };
- 
-    // TC No ile kullanıcı bul (Login için)
+
+    // TC Number ile kullanıcı bul
     public Optional<User> findByTcNumber(String tcNumber) {
-        String sql = "SELECT * FROM users WHERE tc_number = ? AND is_active = 1";
+        String sql = "SELECT * FROM users WHERE tc_number = ?";
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, userRowMapper, tcNumber));
-        } catch (EmptyResultDataAccessException e) {
+            User user = jdbcTemplate.queryForObject(sql, userRowMapper, tcNumber);
+            return Optional.ofNullable(user);
+        } catch (Exception e) {
             return Optional.empty();
         }
     }
- 
-    // Kullanıcının rollerini getir (Spring Security için)
-    public List<String> findRolesByUserId(Long userId) {
-        String sql = "SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?";
-        return jdbcTemplate.queryForList(sql, String.class, userId);
+
+    // Email ile kullanıcı bul
+    public Optional<User> findByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try {
+            User user = jdbcTemplate.queryForObject(sql, userRowMapper, email);
+            return Optional.ofNullable(user);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
- 
-    // Personelin sorumlu olduğu birimlerin ID'lerini getir
-    public List<Integer> findUnitIdsByOfficerId(Long officerId) {
-        String sql = "SELECT unit_id FROM officer_unit_assignments WHERE user_id = ?";
-        return jdbcTemplate.queryForList(sql, Integer.class, officerId);
+
+    // ID ile kullanıcı bul
+    public Optional<User> findById(Long id) {
+        String sql = "SELECT * FROM users WHERE id = ?";
+        try {
+            User user = jdbcTemplate.queryForObject(sql, userRowMapper, id);
+            return Optional.ofNullable(user);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
- 
-    // Yeni Kullanıcı Kaydet
-    public void save(User user) {
-        String sql = "INSERT INTO users (tc_number, email, password_hash, first_name, last_name, phone_number, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
-        jdbcTemplate.update(sql, user.getTcNumber(), user.getEmail(), user.getPasswordHash(), user.getFirstName(), user.getLastName(), user.getPhoneNumber());
+
+    // Kullanıcı kaydet (INSERT)
+    public User save(User user) {
+        String sql = "INSERT INTO users (tc_number, email, password_hash, first_name, last_name, phone_number, avatar_url, created_at, is_active) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, user.getTcNumber());
+            ps.setString(2, user.getEmail());
+            ps.setString(3, user.getPasswordHash());
+            ps.setString(4, user.getFirstName());
+            ps.setString(5, user.getLastName());
+            ps.setString(6, user.getPhoneNumber());
+            ps.setString(7, user.getAvatarUrl());
+            ps.setTimestamp(8, Timestamp.valueOf(user.getCreatedAt()));
+            ps.setBoolean(9, user.getIsActive());
+            return ps;
+        }, keyHolder);
+        
+        user.setId(keyHolder.getKey().longValue());
+        return user;
     }
-    // Kullanıcıya rol ata (Kaydolurken varsayılan STUDENT atamak için)
-    public void addRoleToUser(Long userId, String roleName) {
-        // Önce rolün ID'sini bul
-        String findRoleSql = "SELECT id FROM roles WHERE name = ?";
-        Integer roleId = jdbcTemplate.queryForObject(findRoleSql, Integer.class, roleName);
-        // Sonra ilişki tablosuna ekle
-        String insertSql = "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)";
-        jdbcTemplate.update(insertSql, userId, roleId);
+
+    // TC Number var mı kontrol et
+    public boolean existsByTcNumber(String tcNumber) {
+        String sql = "SELECT COUNT(*) FROM users WHERE tc_number = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, tcNumber);
+        return count != null && count > 0;
+    }
+
+    // Email var mı kontrol et
+    public boolean existsByEmail(String email) {
+        String sql = "SELECT COUNT(*) FROM users WHERE email = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email);
+        return count != null && count > 0;
     }
 }
-
-    
-    
-
