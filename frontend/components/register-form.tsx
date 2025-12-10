@@ -9,19 +9,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
+import { authService } from "@/lib/api"
+import type { RegisterRequest } from "@/lib/api/types"
 
 export function RegisterForm() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [tcError, setTcError] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
-    tcIdentity: "",
+    phoneNumber: "",
+    tcNumber: "",
     password: "",
     confirmPassword: "",
   })
@@ -42,7 +47,7 @@ export function RegisterForm() {
 
   const handleTCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    setFormData({ ...formData, tcIdentity: value })
+    setFormData({ ...formData, tcNumber: value })
     
     if (value.length === 11) {
       if (!validateTCNumber(value)) {
@@ -57,25 +62,87 @@ export function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setSuccess("")
     
-    if (!validateTCNumber(formData.tcIdentity)) {
+    // Validations
+    if (!validateTCNumber(formData.tcNumber)) {
       setTcError("Invalid TC Identity Number")
+      return
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
+
+    // Clean phone number (digits only)
+    const cleanPhone = formData.phoneNumber.replace(/\D/g, '')
+    if (cleanPhone.length !== 10) {
+      setError("Please enter a valid phone number (10 digits)")
       return
     }
     
     setIsLoading(true)
 
-    // Simulate registration
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      // API request
+      const registerData: RegisterRequest = {
+        tcNumber: formData.tcNumber,
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: cleanPhone,
+      }
 
-    router.push("/login")
-    setIsLoading(false)
+      const response = await authService.register(registerData)
+      
+      setSuccess("Registration successful! Redirecting...")
+      
+      // Successful registration - redirect based on role
+      setTimeout(() => {
+        if (response.role === 'ADMIN') {
+          router.push('/admin')
+        } else if (response.role === 'OFFICER') {
+          router.push('/officer')
+        } else {
+          router.push('/student')
+        }
+      }, 1500)
+
+    } catch (err: any) {
+      setError(err.message || "An error occurred during registration")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <Card className="border-0 shadow-lg">
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Error Alert */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
+              <AlertCircle className="h-4 w-4" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Success Alert */}
+          {success && (
+            <div className="flex items-center gap-2 p-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-md">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>{success}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
@@ -86,6 +153,7 @@ export function RegisterForm() {
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 required
+                disabled={isLoading}
                 className="h-11"
               />
             </div>
@@ -98,20 +166,22 @@ export function RegisterForm() {
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 required
+                disabled={isLoading}
                 className="h-11"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tcIdentity">TC Identity Number</Label>
+            <Label htmlFor="tcNumber">TC Identity Number</Label>
             <Input
-              id="tcIdentity"
+              id="tcNumber"
               type="text"
-              placeholder="Enter your TC Identity Number"
-              value={formData.tcIdentity}
+              placeholder="12345678901"
+              value={formData.tcNumber}
               onChange={handleTCChange}
               required
+              disabled={isLoading}
               maxLength={11}
               pattern="[0-9]{11}"
               className={`h-11 ${tcError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
@@ -124,23 +194,25 @@ export function RegisterForm() {
             <Input
               id="email"
               type="email"
-              placeholder="john@university.edu"
+              placeholder="john.doe@university.edu"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
+              disabled={isLoading}
               className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phoneNumber">Phone Number</Label>
             <Input
-              id="phone"
+              id="phoneNumber"
               type="tel"
-              placeholder="+90 5XX XXX XX XX"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="5551234567"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
               required
+              disabled={isLoading}
               className="h-11"
             />
           </div>
@@ -155,6 +227,8 @@ export function RegisterForm() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
+                disabled={isLoading}
+                minLength={6}
                 className="h-11 pr-10"
               />
               <Button
@@ -163,6 +237,7 @@ export function RegisterForm() {
                 size="icon"
                 className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -182,6 +257,7 @@ export function RegisterForm() {
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               required
+              disabled={isLoading}
               className="h-11"
             />
           </div>

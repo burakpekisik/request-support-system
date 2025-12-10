@@ -3,18 +3,17 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 export function LoginForm() {
-  const router = useRouter()
+  const { login, loading, error } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [tcError, setTcError] = useState("")
   const [formData, setFormData] = useState({
     tcIdentity: "",
@@ -57,22 +56,32 @@ export function LoginForm() {
       setTcError("Invalid TC Identity Number")
       return
     }
-    
-    setIsLoading(true)
 
-    // Simulate login - in production, this would be an API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (!formData.password.trim()) {
+      setTcError("Password cannot be empty")
+      return
+    }
 
-    // For demo purposes, redirect based on a simple check
-    // In production, this would come from the auth response
-    router.push("/student")
-    setIsLoading(false)
+    try {
+      await login(formData.tcIdentity, formData.password)
+    } catch (err) {
+      // Error is handled by useAuth hook
+      console.error(err)
+    }
   }
 
   return (
     <Card className="border-0 shadow-lg">
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {(tcError || error) && (
+            <div className="rounded-md bg-red-50 p-4">
+              <p className="text-sm font-medium text-red-800">
+                {tcError || error}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="tcIdentity">TC Identity Number</Label>
             <Input
@@ -84,6 +93,7 @@ export function LoginForm() {
               required
               maxLength={11}
               pattern="[0-9]{11}"
+              disabled={loading}
               className={`h-11 ${tcError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
             {tcError && <p className="text-sm text-red-500 mt-1">{tcError}</p>}
@@ -99,12 +109,14 @@ export function LoginForm() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
+                disabled={loading}
                 className="h-11 pr-10"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
+                disabled={loading}
                 className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
               >
@@ -123,8 +135,8 @@ export function LoginForm() {
             </Link>
           </div>
 
-          <Button type="submit" className="w-full h-11" disabled={isLoading}>
-            {isLoading ? (
+          <Button type="submit" className="w-full h-11" disabled={loading}>
+            {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Signing in...
@@ -135,9 +147,9 @@ export function LoginForm() {
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            {"Don't have an account? "}
+            Don't have an account?{" "}
             <Link href="/register" className="text-primary hover:underline font-medium">
-              Register
+              Sign up
             </Link>
           </div>
         </form>

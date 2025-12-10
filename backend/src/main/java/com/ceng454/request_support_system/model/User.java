@@ -101,4 +101,7 @@ public class User {
     public void setActive(Boolean active) {
         isActive = active;
     }
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

@@ -3,6 +3,7 @@ package com.ceng454.request_support_system.service;
 import com.ceng454.request_support_system.dto.AuthResponse;
 import com.ceng454.request_support_system.dto.LoginRequest;
 import com.ceng454.request_support_system.dto.RegisterRequest;
+import com.ceng454.request_support_system.dto.TokenValidationResponse;
 import com.ceng454.request_support_system.model.Role;
 import com.ceng454.request_support_system.model.User;
 import com.ceng454.request_support_system.repository.RoleRepository;
@@ -156,5 +157,29 @@ public class AuthService {
         int sum = 0;
         for (int i = 0; i < 10; i++) sum += digits[i];
         return (sum % 10) == digits[10];
+    }
+
+    public TokenValidationResponse validateAndGetUserInfo(String tcNumber) {
+        User user = userRepository.findByTcNumber(tcNumber)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.getIsActive()) {
+            throw new RuntimeException("User account is not active");
+        }
+
+        // Kullanıcının rollerini al
+        List<Role> roles = userRoleRepository.findRolesByUserId(user.getId());
+        String primaryRole = determinePrimaryRole(roles);
+
+        return TokenValidationResponse.builder()
+                .valid(true)
+                .userId(user.getId())
+                .tcNumber(user.getTcNumber())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(primaryRole)
+                .message("Token is valid")
+                .build();
     }
 }
