@@ -1,8 +1,10 @@
 package com.ceng454.request_support_system.repository;
 
+import com.ceng454.request_support_system.dto.RequestSummary;
 import com.ceng454.request_support_system.model.Request;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
@@ -18,6 +20,21 @@ import java.util.Map;
 public class RequestRepository {
 
     private final JdbcTemplate jdbcTemplate;
+
+    private final RowMapper<RequestSummary> requestSummaryRowMapper = (rs, rowNum) -> 
+        RequestSummary.builder()
+            .id(rs.getLong("id"))
+            .title(rs.getString("title"))
+            .description(rs.getString("description"))
+            .requesterName(rs.getString("requester_name"))
+            .requesterEmail(rs.getString("requester_email"))
+            .category(rs.getString("category"))
+            .priority(rs.getString("priority"))
+            .status(rs.getString("status"))
+            .unitName(rs.getString("unit_name"))
+            .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
+            .updatedAt(rs.getTimestamp("updated_at").toLocalDateTime())
+            .build();
 
     // Talep Oluşturma (Auto-increment ID'yi geri döner)
     public Long save(Request request) {
@@ -84,5 +101,192 @@ public class RequestRepository {
         """, inSql);
 
         return jdbcTemplate.queryForList(sql, unitIds.toArray());
+    }
+
+    // ========== Officer Dashboard Methods ==========
+
+    /**
+     * Officer'a atanmış birimler için bekleyen talepler
+     */
+    public List<RequestSummary> findPendingRequestsByOfficerUnits(Long officerId, int limit) {
+        String sql = """
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                un.name as unit_name,
+                r.created_at,
+                r.updated_at
+            FROM requests r
+            INNER JOIN users u ON r.requester_id = u.id
+            INNER JOIN categories c ON r.category_id = c.id
+            INNER JOIN priorities p ON r.priority_id = p.id
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN units un ON r.unit_id = un.id
+            INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
+            WHERE oua.user_id = ?
+              AND s.is_final = FALSE
+              AND r.assigned_officer_id IS NULL
+            ORDER BY p.level DESC, r.created_at ASC
+            LIMIT ?
+        """;
+        
+        return jdbcTemplate.query(sql, requestSummaryRowMapper, officerId, limit);
+    }
+
+    /**
+     * Officer'a atanmış aktif talepler (devam edenler)
+     */
+    public List<RequestSummary> findInProgressRequestsByOfficer(Long officerId, int limit) {
+        String sql = """
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                un.name as unit_name,
+                r.created_at,
+                r.updated_at
+            FROM requests r
+            INNER JOIN users u ON r.requester_id = u.id
+            INNER JOIN categories c ON r.category_id = c.id
+            INNER JOIN priorities p ON r.priority_id = p.id
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN units un ON r.unit_id = un.id
+            WHERE r.assigned_officer_id = ?
+              AND s.is_final = FALSE
+            ORDER BY p.level DESC, r.updated_at DESC
+            LIMIT ?
+        """;
+        
+        return jdbcTemplate.query(sql, requestSummaryRowMapper, officerId, limit);
+    }
+
+    /**
+     * Yeni talep sayısı (officer'ın birimlerinde)
+     */
+    public int countNewRequestsByOfficerUnits(Long officerId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM requests r
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
+            WHERE oua.user_id = ?
+              AND s.name = 'Beklemede'
+              AND r.assigned_officer_id IS NULL
+        """;
+        
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, officerId);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * Devam eden talep sayısı (officer'a atanmış)
+     */
+    public int countInProgressRequestsByOfficer(Long officerId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM requests r
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.assigned_officer_id = ?
+              AND s.is_final = FALSE
+        """;
+        
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, officerId);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * Bugün çözülen talep sayısı
+     */
+    public int countResolvedTodayByOfficer(Long officerId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM requests r
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.assigned_officer_id = ?
+              AND s.name = 'Çözüldü'
+              AND DATE(r.updated_at) = CURDATE()
+        """;
+        
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, officerId);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * Transfer edilen talep sayısı (son 7 gün)
+     */
+    public int countTransferredByOfficer(Long officerId) {
+        String sql = """
+            SELECT COUNT(DISTINCT rt.request_id)
+            FROM request_timeline rt
+            INNER JOIN requests r ON rt.request_id = r.id
+            WHERE rt.actor_id = ?
+              AND rt.comment LIKE '%transfer%'
+              AND rt.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        """;
+        
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, officerId);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * Geçen haftaya göre yeni talep trendi
+     */
+    public int calculateNewRequestsTrend(Long officerId) {
+        String sql = """
+            SELECT 
+                (SELECT COUNT(*) FROM requests r
+                 INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
+                 WHERE oua.user_id = ? 
+                   AND DATE(r.created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                (SELECT COUNT(*) FROM requests r
+                 INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
+                 WHERE oua.user_id = ? 
+                   AND DATE(r.created_at) >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+                   AND DATE(r.created_at) < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+        """;
+        
+        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+            int thisWeek = rs.getInt("this_week");
+            int lastWeek = rs.getInt("last_week");
+            if (lastWeek == 0) return 0;
+            return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+        }, officerId, officerId);
+    }
+
+    /**
+     * Bugün çözülen taleplerin trendi
+     */
+    public int calculateResolvedTodayTrend(Long officerId) {
+        String sql = """
+            SELECT 
+                (SELECT COUNT(*) FROM requests r
+                 INNER JOIN statuses s ON r.current_status_id = s.id
+                 WHERE r.assigned_officer_id = ? 
+                   AND s.name = 'Çözüldü'
+                   AND DATE(r.updated_at) = CURDATE()) as today,
+                (SELECT COUNT(*) FROM requests r
+                 INNER JOIN statuses s ON r.current_status_id = s.id
+                 WHERE r.assigned_officer_id = ? 
+                   AND s.name = 'Çözüldü'
+                   AND DATE(r.updated_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) as yesterday
+        """;
+        
+        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+            int today = rs.getInt("today");
+            int yesterday = rs.getInt("yesterday");
+            if (yesterday == 0) return 0;
+            return (int) (((double) (today - yesterday) / yesterday) * 100);
+        }, officerId, officerId);
     }
 }

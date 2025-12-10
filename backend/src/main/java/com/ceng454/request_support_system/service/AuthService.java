@@ -84,6 +84,7 @@ public class AuthService {
                 .email(savedUser.getEmail())
                 .firstName(savedUser.getFirstName())
                 .lastName(savedUser.getLastName())
+                .phoneNumber(savedUser.getPhoneNumber())
                 .role("STUDENT")
                 .message("Kayıt başarılı")
                 .build();
@@ -124,6 +125,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .phoneNumber(user.getPhoneNumber())
                 .role(primaryRole)
                 .message("Giriş başarılı")
                 .build();

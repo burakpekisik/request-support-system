@@ -1,3 +1,5 @@
+import { storage } from '../storage';
+
 class ApiClient {
   private baseURL: string;
 
@@ -20,14 +22,12 @@ class ApiClient {
     };
 
     // Add auth token if exists (client-side only)
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('jwt_token');
-      if (token) {
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${token}`,
-        };
-      }
+    const token = storage.getToken();
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      };
     }
 
     const response = await fetch(url, config);

@@ -1,5 +1,6 @@
 import { apiClient } from './client';
-import type { RegisterRequest, LoginRequest, AuthResponse } from './types';
+import type { RegisterRequest, LoginRequest, AuthResponse, UserData } from './types';
+import { storage } from '../storage';
 
 class AuthService {
   private readonly baseUrl = '/auth';
@@ -42,45 +43,43 @@ class AuthService {
    * Logout user
    */
   logout(): void {
-    if (typeof window === 'undefined') return;
-    
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_data');
+    storage.clearAuth();
   }
 
   /**
    * Get stored JWT token
    */
   getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('jwt_token');
+    return storage.getToken();
   }
 
   /**
    * Get stored user data
    */
-  getUser(): AuthResponse | null {
-    if (typeof window === 'undefined') return null;
-    
-    const userStr = localStorage.getItem('user_data');
-    return userStr ? JSON.parse(userStr) : null;
+  getUser(): UserData | null {
+    return storage.getUserData();
   }
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return storage.isAuthenticated();
   }
 
   /**
    * Save authentication data to localStorage
    */
   private saveAuthData(response: AuthResponse): void {
-    if (typeof window === 'undefined') return;
-    
-    localStorage.setItem('jwt_token', response.token);
-    localStorage.setItem('user_data', JSON.stringify(response));
+    storage.setToken(response.token);
+    storage.setUserData({
+      firstName: response.firstName,
+      lastName: response.lastName,
+      email: response.email,
+      tcNumber: response.tcNumber,
+      phoneNumber: response.phoneNumber,
+      role: response.role,
+    });
   }
 
   /**

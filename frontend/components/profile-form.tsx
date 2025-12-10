@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,20 +10,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Camera, Save, Lock } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import type { UserData } from "@/lib/api/types"
+import { getInitials } from "@/lib/constants"
+import { storage } from "@/lib/storage"
 
 export function ProfileForm() {
   const [formData, setFormData] = useState({
-    name: "Ahmet",
-    surname: "Yılmaz",
-    email: "ahmet.yilmaz@university.edu",
-    tc_number: "12345678901",
-    gender: "male",
-    phone: "+90 555 123 4567",
+    name: "",
+    surname: "",
+    email: "",
+    tc_number: "",
+    phone: "",
   })
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const initials = `${formData.name[0]}${formData.surname[0]}`.toUpperCase()
+  useEffect(() => {
+    const userData = storage.getUserData()
+    if (userData) {
+      setFormData({
+        name: userData.firstName || "",
+        surname: userData.lastName || "",
+        email: userData.email || "",
+        tc_number: userData.tcNumber || "",
+        phone: userData.phoneNumber || "",
+      })
+    }
+  }, [])
+
+  const initials = formData.name && formData.surname 
+    ? getInitials(`${formData.name} ${formData.surname}`)
+    : "U"
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

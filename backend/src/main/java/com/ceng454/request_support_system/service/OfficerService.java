@@ -1,0 +1,52 @@
+package com.ceng454.request_support_system.service;
+
+import com.ceng454.request_support_system.dto.OfficerDashboardStats;
+import com.ceng454.request_support_system.dto.RequestSummary;
+import com.ceng454.request_support_system.repository.RequestRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class OfficerService {
+
+    @Autowired
+    private RequestRepository requestRepository;
+
+    /**
+     * Officer dashboard istatistiklerini getir
+     */
+    public OfficerDashboardStats getDashboardStats(Long officerId) {
+        int newRequests = requestRepository.countNewRequestsByOfficerUnits(officerId);
+        int inProgress = requestRepository.countInProgressRequestsByOfficer(officerId);
+        int resolvedToday = requestRepository.countResolvedTodayByOfficer(officerId);
+        int transferred = requestRepository.countTransferredByOfficer(officerId);
+        
+        int newRequestsTrend = requestRepository.calculateNewRequestsTrend(officerId);
+        int resolvedTodayTrend = requestRepository.calculateResolvedTodayTrend(officerId);
+
+        return OfficerDashboardStats.builder()
+                .newRequests(newRequests)
+                .inProgress(inProgress)
+                .resolvedToday(resolvedToday)
+                .transferred(transferred)
+                .newRequestsTrend(newRequestsTrend)
+                .resolvedTodayTrend(resolvedTodayTrend)
+                .build();
+    }
+
+    /**
+     * Officer'ın inbox'ındaki son talepleri getir
+     */
+    public List<RequestSummary> getRecentInboxRequests(Long officerId, int limit) {
+        return requestRepository.findPendingRequestsByOfficerUnits(officerId, limit);
+    }
+
+    /**
+     * Officer'a atanmış devam eden talepleri getir
+     */
+    public List<RequestSummary> getInProgressRequests(Long officerId, int limit) {
+        return requestRepository.findInProgressRequestsByOfficer(officerId, limit);
+    }
+}

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Bell, User, LogOut, Settings, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,19 +13,37 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import type { UserData } from "@/lib/api/types"
+import { formatRole, getInitials } from "@/lib/constants"
+import { storage } from "@/lib/storage"
 
 interface HeaderProps {
-  userName?: string
-  userRole?: string
-  profileHref?: string
+  profileHref?: string;
 }
 
-export function Header({ userName = "John Doe", userRole = "Student", profileHref = "/profile" }: HeaderProps) {
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
+export function Header({ profileHref = "/profile" }: HeaderProps) {
+  const router = useRouter()
+  const [userData, setUserData] = useState<UserData | null>(null)
+
+  useEffect(() => {
+    const data = storage.getUserData()
+    if (data) {
+      setUserData(data)
+    }
+  }, [])
+
+  const handleLogout = () => {
+    storage.clearAuth()
+    router.push('/login')
+  }
+
+  const userName = userData ? `${userData.firstName} ${userData.lastName}` : "Loading..."
+  const userRole = userData?.role ? formatRole(userData.role) : "User"
+  
+  const initials = userData 
+    ? getInitials(`${userData.firstName} ${userData.lastName}`)
+    : "U"
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-6 bg-card border-b border-border">
@@ -91,16 +110,10 @@ export function Header({ userName = "John Doe", userRole = "Student", profileHre
                 Profile
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="text-destructive">
-              <Link href="/login">
-                <LogOut className="w-4 h-4 mr-2" />
-                Log out
-              </Link>
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+              <LogOut className="w-4 h-4 mr-2" />
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

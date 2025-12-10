@@ -1,33 +1,40 @@
+"use client"
+
 import { ProfileForm } from "@/components/profile-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Sidebar } from "@/components/sidebar"
-import { Header } from "@/components/header"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function ProfilePage() {
-  return (
-    <div className="flex h-screen bg-background">
-      <Sidebar role="student" />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header userName="Ahmet Yılmaz" userRole="Student" profileHref="/profile" />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Profile Settings</h1>
-              <p className="text-muted-foreground">Manage your personal information and account settings</p>
-            </div>
+  const router = useRouter()
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your profile details. Some fields cannot be changed.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProfileForm />
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+  return (
+    <div className="max-w-2xl mx-auto space-y-6 mt-8">
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => router.back()}
+          className="h-8 w-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Profile Settings</h1>
+          <p className="text-muted-foreground">Manage your personal information and account settings</p>
+        </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Personal Information</CardTitle>
+          <CardDescription>Update your profile details. Some fields cannot be changed.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileForm />
+        </CardContent>
+      </Card>
     </div>
   )
 }

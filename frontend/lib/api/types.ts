@@ -21,6 +21,7 @@ export interface AuthResponse {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber: string;
   role: string;
   message: string;
 }
@@ -38,7 +39,40 @@ export interface User {
   isActive: boolean;
 }
 
+export interface UserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  tcNumber: string;
+  phoneNumber: string;
+  role: string;
+}
+
 export interface TokenCheckResponse {
   valid: boolean;
   message: string;
+}
+
+// Officer Dashboard Types
+export interface OfficerDashboardStats {
+  newRequests: number;
+  inProgress: number;
+  resolvedToday: number;
+  transferred: number;
+  newRequestsTrend: number;
+  resolvedTodayTrend: number;
+}
+
+export interface RequestSummary {
+  id: number;
+  title: string;
+  description: string;
+  requesterName: string;
+  requesterEmail: string;
+  category: string;
+  priority: string;
+  status: string;
+  unitName: string;
+  createdAt: string;
+  updatedAt: string;
 }
