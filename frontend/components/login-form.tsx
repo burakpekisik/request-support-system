@@ -15,13 +15,49 @@ export function LoginForm() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [tcError, setTcError] = useState("")
   const [formData, setFormData] = useState({
     tcIdentity: "",
     password: "",
   })
 
+  const validateTCNumber = (tcNumber: string): boolean => {
+    if (tcNumber.length !== 11 || !/^\d+$/.test(tcNumber)) return false
+    if (tcNumber[0] === '0') return false
+
+    const digits = tcNumber.split('').map(Number)
+    const evenSum = digits.filter((_, i) => i % 2 === 0 && i < 9).reduce((sum, digit) => sum + digit, 0)
+    const oddSum = digits.filter((_, i) => i % 2 === 1 && i < 9).reduce((sum, digit) => sum + digit, 0)
+
+    const digit10 = (evenSum * 7 - oddSum) % 10
+    const digit11 = digits.slice(0, 10).reduce((sum, digit) => sum + digit, 0) % 10
+
+    return digit10 === digits[9] && digit11 === digits[10]
+  }
+
+  const handleTCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormData({ ...formData, tcIdentity: value })
+    
+    if (value.length === 11) {
+      if (!validateTCNumber(value)) {
+        setTcError("Invalid TC Identity Number")
+      } else {
+        setTcError("")
+      }
+    } else {
+      setTcError("")
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateTCNumber(formData.tcIdentity)) {
+      setTcError("Invalid TC Identity Number")
+      return
+    }
+    
     setIsLoading(true)
 
     // Simulate login - in production, this would be an API call
@@ -44,12 +80,13 @@ export function LoginForm() {
               type="text"
               placeholder="Enter your TC Identity Number"
               value={formData.tcIdentity}
-              onChange={(e) => setFormData({ ...formData, tcIdentity: e.target.value })}
+              onChange={handleTCChange}
               required
               maxLength={11}
               pattern="[0-9]{11}"
-              className="h-11"
+              className={`h-11 ${tcError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {tcError && <p className="text-sm text-red-500 mt-1">{tcError}</p>}
           </div>
 
           <div className="space-y-2">
