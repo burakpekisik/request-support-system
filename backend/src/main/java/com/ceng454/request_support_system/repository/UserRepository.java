@@ -110,4 +110,10 @@ public class UserRepository {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email);
         return count != null && count > 0;
     }
+
+    public List<Integer> findUnitIdsByOfficerId(Long officerId) {
+        String sql = "SELECT unit_id FROM officer_unit_assignments WHERE user_id = ?";
+        
+        return jdbcTemplate.queryForList(sql, Integer.class, officerId);
+    }
 }
