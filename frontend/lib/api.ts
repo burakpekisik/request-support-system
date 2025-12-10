@@ -1,5 +1,8 @@
 const API_URL = "http://localhost:8080";
 
+// Check if running on client-side
+const isClient = typeof window !== 'undefined';
+
 // ----------------- REGISTER -----------------
 export async function register(tcNumber: string, firstName: string, lastName: string, email: string, password: string, phoneNumber: string) {
   const response = await fetch(`${API_URL}/api/auth/register`, {
@@ -11,14 +14,19 @@ export async function register(tcNumber: string, firstName: string, lastName: st
   });
 
   if (!response.ok) {
-    throw new Error("Register failed");
+    const errorText = await response.text();
+    throw new Error(errorText || "Register failed");
   }
 
   const data = await response.json();
-  const token = response.headers.get("Authorization")?.replace("Bearer ", "");
-
-  if (token) localStorage.setItem("jwt_token", token);
-  localStorage.setItem("user_data", JSON.stringify(data));
+  
+  // Token response body'de geliyor
+  if (isClient && data.token) {
+    localStorage.setItem("jwt_token", data.token);
+    localStorage.setItem("user_id", data.userId);
+    localStorage.setItem("user_role", data.role);
+    localStorage.setItem("user_data", JSON.stringify(data));
+  }
 
   return data;
 }
@@ -34,26 +42,23 @@ export async function login(tcNumber: string, password: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Login failed");
+    const errorText = await response.text();
+    throw new Error(errorText || "Login failed");
   }
 
   const data = await response.json();
-  const token = response.headers.get("Authorization")?.replace("Bearer ", "");
 
-  if (token) {
-    localStorage.setItem("jwt_token", token);
-    localStorage.setItem("user_id", data.userId);
-    localStorage.setItem("user_role", data.role);
+  // Token response body'de geliyor
+  if (isClient && data.token) {
+    localStorage.setItem("user_data", JSON.stringify(data));
   }
-  
-  localStorage.setItem("user_data", JSON.stringify(data));
 
   return data;
 }
 
 // ----------------- AUTH HEADER -----------------
 export function getAuthHeaders() {
-  const token = localStorage.getItem("jwt_token");
+  const token = isClient ? localStorage.getItem("jwt_token") : null;
   return {
     "Content-Type": "application/json",
     Authorization: token ? `Bearer ${token}` : "",
@@ -62,19 +67,24 @@ export function getAuthHeaders() {
 
 // ----------------- LOGOUT -----------------
 export function logout() {
-  localStorage.removeItem("jwt_token");
-  localStorage.removeItem("user_data");
-  localStorage.removeItem("user_id");
-  localStorage.removeItem("user_role");
+  if (isClient) {
+    localStorage.removeItem("jwt_token");
+    localStorage.removeItem("user_data");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_role");
+  }
 }
 
 // ----------------- GET STORED USER -----------------
 export function getStoredUser() {
+  if (!isClient) return null;
+  
   const userDataStr = localStorage.getItem("user_data");
   return userDataStr ? JSON.parse(userDataStr) : null;
 }
 
 // ----------------- CHECK IF AUTHENTICATED -----------------
 export function isAuthenticated(): boolean {
+  if (!isClient) return false;
   return !!localStorage.getItem("jwt_token");
 }
