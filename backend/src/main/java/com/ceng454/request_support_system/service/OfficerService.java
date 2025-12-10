@@ -49,4 +49,22 @@ public class OfficerService {
     public List<RequestSummary> getInProgressRequests(Long officerId, int limit) {
         return requestRepository.findInProgressRequestsByOfficer(officerId, limit);
     }
+
+    /**
+     * Officer inbox'ındaki talepleri filtrele, sırala ve ara
+     */
+    public List<RequestSummary> getInboxRequests(
+            Long officerId, 
+            String status, 
+            String priority, 
+            String search, 
+            String sortBy, 
+            String sortOrder,
+            int page,
+            int size
+    ) {
+        return requestRepository.findInboxRequestsWithFilters(
+            officerId, status, priority, search, sortBy, sortOrder, page, size
+        );
+    }
 }

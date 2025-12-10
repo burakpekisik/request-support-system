@@ -289,4 +289,92 @@ public class RequestRepository {
             return (int) (((double) (today - yesterday) / yesterday) * 100);
         }, officerId, officerId);
     }
+
+    /**
+     * Officer inbox'ındaki talepleri filtrele, sırala ve ara (pagination ile)
+     */
+    public List<RequestSummary> findInboxRequestsWithFilters(
+            Long officerId,
+            String status,
+            String priority,
+            String search,
+            String sortBy,
+            String sortOrder,
+            int page,
+            int size
+    ) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                un.name as unit_name,
+                r.created_at,
+                r.updated_at
+            FROM requests r
+            INNER JOIN users u ON r.requester_id = u.id
+            INNER JOIN categories c ON r.category_id = c.id
+            INNER JOIN priorities p ON r.priority_id = p.id
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN units un ON r.unit_id = un.id
+            INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
+            WHERE oua.user_id = ?
+        """);
+
+        List<Object> params = new java.util.ArrayList<>();
+        params.add(officerId);
+
+        // Status filter
+        if (!"all".equalsIgnoreCase(status)) {
+            if ("pending".equalsIgnoreCase(status)) {
+                sql.append(" AND s.name = 'Beklemede'");
+            } else if ("in_progress".equalsIgnoreCase(status)) {
+                sql.append(" AND (s.name = 'İşleme Alındı' OR s.name = 'Cevaplandı')");
+            } else if ("resolved".equalsIgnoreCase(status)) {
+                sql.append(" AND s.name = 'Çözüldü'");
+            }
+        }
+
+        // Priority filter
+        if (!"all".equalsIgnoreCase(priority)) {
+            if ("high".equalsIgnoreCase(priority)) {
+                sql.append(" AND (p.name = 'Yüksek' OR p.name = 'Kritik')");
+            } else if ("medium".equalsIgnoreCase(priority)) {
+                sql.append(" AND (p.name = 'Orta' OR p.name = 'Normal')");
+            } else if ("low".equalsIgnoreCase(priority)) {
+                sql.append(" AND p.name = 'Düşük'");
+            }
+        }
+
+        // Search filter
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)");
+            String searchPattern = "%" + search.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+
+        // Sorting
+        String orderByClause = switch (sortBy) {
+            case "priority" -> " ORDER BY p.level " + sortOrder.toUpperCase();
+            case "status" -> " ORDER BY s.name " + sortOrder.toUpperCase();
+            case "requester" -> " ORDER BY u.last_name " + sortOrder.toUpperCase();
+            case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
+            default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
+        };
+        sql.append(orderByClause);
+
+        // Pagination
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(size);
+        params.add(page * size);
+
+        return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
+    }
 }

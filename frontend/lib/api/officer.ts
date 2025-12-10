@@ -25,6 +25,32 @@ class OfficerService {
     const response = await apiClient.get<RequestSummary[]>(`/officer/requests/in-progress?limit=${limit}`);
     return response;
   }
+
+  /**
+   * Get inbox requests with filtering, sorting and search
+   */
+  async getInboxRequests(params: {
+    status?: string;
+    priority?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+    page?: number;
+    size?: number;
+  } = {}): Promise<RequestSummary[]> {
+    const queryParams = new URLSearchParams();
+    
+    queryParams.append('status', params.status || 'all');
+    queryParams.append('priority', params.priority || 'all');
+    queryParams.append('search', params.search || '');
+    queryParams.append('sortBy', params.sortBy || 'createdAt');
+    queryParams.append('sortOrder', params.sortOrder || 'desc');
+    queryParams.append('page', String(params.page || 0));
+    queryParams.append('size', String(params.size || 20));
+
+    const response = await apiClient.get<RequestSummary[]>(`/officer/inbox?${queryParams.toString()}`);
+    return response;
+  }
 }
 
 export const officerService = new OfficerService();

@@ -60,11 +60,12 @@ export function TransferDialog({ open, onOpenChange, currentUnit }: TransferDial
   )
 
   const handleTransfer = () => {
-    if (activeTab === "officers" && selectedOfficer) {
-      console.log("Transferring to officer:", selectedOfficer)
-    } else if (activeTab === "units" && selectedUnit) {
-      console.log("Transferring to unit:", selectedUnit)
-    }
+    // TODO: Implement transfer API call
+    // if (activeTab === "officers" && selectedOfficer) {
+    //   await requestService.transferToOfficer(selectedOfficer)
+    // } else if (activeTab === "units" && selectedUnit) {
+    //   await requestService.transferToUnit(selectedUnit)
+    // }
     onOpenChange(false)
     setSelectedOfficer("")
     setSelectedUnit("")

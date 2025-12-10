@@ -44,12 +44,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             // Token'ı validate et
             if (jwtService.validateToken(jwt)) {
-                String tcNumber = jwtService.extractTcNumber(jwt);
+                Long userId = jwtService.extractUserId(jwt);
                 String role = jwtService.extractRole(jwt);
 
-                // Authentication oluştur
+                // Authentication oluştur - userId'yi principal olarak kullan
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        tcNumber,
+                        userId.toString(),
                         null,
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
                 );

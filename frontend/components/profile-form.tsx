@@ -52,8 +52,8 @@ export function ProfileForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle save logic
-    console.log("Saving profile:", formData)
+    // TODO: Implement profile update API call
+    // await profileService.updateProfile(formData)
   }
 
   return (

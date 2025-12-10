@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -16,162 +16,182 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { MoreHorizontal, UserPlus, CheckCircle, XCircle, ArrowRightLeft, Eye } from "lucide-react"
+import { officerService } from "@/lib/api/officer"
+import type { RequestSummary, RequestFilters } from "@/lib/api/types"
+import { statusMapping, priorityColors, getInitials, getRelativeTime } from "@/lib/constants"
 
-const inboxItems = [
-  {
-    id: "1240",
-    title: "Email System Not Receiving Messages",
-    description: "My university email has stopped receiving new messages since yesterday morning...",
-    requester: "Zeynep Kaya",
-    initials: "ZK",
-    status: "pending" as const,
-    priority: "High",
-    date: "Dec 7, 2024",
-    time: "10:30 AM",
-    unread: true,
-  },
-  {
-    id: "1239",
-    title: "Projector Not Working in Room 301",
-    description: "The projector in lecture hall 301 is not displaying any image when connected...",
-    requester: "Ali Demir",
-    initials: "AD",
-    status: "pending" as const,
-    priority: "Medium",
-    date: "Dec 7, 2024",
-    time: "8:15 AM",
-    unread: true,
-  },
-  {
-    id: "1238",
-    title: "Software Installation Request - MATLAB",
-    description: "I need MATLAB installed on my department computer for research work...",
-    requester: "Fatma Yıldız",
-    initials: "FY",
-    status: "in_progress" as const,
-    priority: "Low",
-    date: "Dec 6, 2024",
-    time: "3:45 PM",
-    unread: false,
-  },
-  {
-    id: "1237",
-    title: "Network Connectivity Issues in Building C",
-    description: "Multiple computers in Building C, Floor 2 are experiencing intermittent network...",
-    requester: "Emre Can",
-    initials: "EC",
-    status: "in_progress" as const,
-    priority: "High",
-    date: "Dec 6, 2024",
-    time: "11:20 AM",
-    unread: false,
-  },
-  {
-    id: "1236",
-    title: "Printer Setup Request",
-    description: "Need to set up the new network printer in the faculty office...",
-    requester: "Ayşe Şahin",
-    initials: "AŞ",
-    status: "pending" as const,
-    priority: "Low",
-    date: "Dec 5, 2024",
-    time: "2:00 PM",
-    unread: false,
-  },
-]
-
-const priorityColors = {
-  High: "bg-destructive/20 text-destructive border-destructive/30",
-  Medium: "bg-warning/20 text-warning-foreground border-warning/30",
-  Low: "bg-muted text-muted-foreground border-muted",
+interface OfficerInboxListProps {
+  filters: RequestFilters;
 }
 
-export function OfficerInboxList() {
-  const [selectedItems, setSelectedItems] = useState<string[]>([])
+export function OfficerInboxList({ filters }: OfficerInboxListProps) {
+  const [requests, setRequests] = useState<RequestSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadInboxRequests()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.status, filters.priority, filters.search])
+
+  const loadInboxRequests = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await officerService.getInboxRequests({
+        status: filters.status,
+        priority: filters.priority,
+        search: filters.search,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        page: 0,
+        size: 50
+      })
+      setRequests(data)
+    } catch (error) {
+      console.error("Failed to load inbox requests:", error)
+      setError(error instanceof Error ? error.message : 'Failed to load requests')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex items-center justify-center">
+            <div className="text-muted-foreground">Loading requests...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="text-destructive">Error loading requests</div>
+            <div className="text-sm text-muted-foreground">{error}</div>
+            <Button onClick={loadInboxRequests} variant="outline" size="sm" className="mt-2">
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (requests.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="text-muted-foreground">No requests found</div>
+            <div className="text-sm text-muted-foreground">
+              {filters.search || filters.status !== 'all' || filters.priority !== 'all' 
+                ? 'Try adjusting your filters' 
+                : 'No pending requests at the moment'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
       <CardContent className="p-0 divide-y divide-border">
-        {inboxItems.map((item) => (
-          <div
-            key={item.id}
-            className={cn(
-              "flex items-start gap-4 p-4 hover:bg-accent/50 transition-colors",
-              item.unread && "bg-primary/5",
-            )}
-          >
-            <Avatar className="h-10 w-10 mt-1">
-              <AvatarFallback className="bg-secondary text-secondary-foreground">{item.initials}</AvatarFallback>
-            </Avatar>
+        {requests.map((item) => {
+          const status = statusMapping[item.status] || "pending"
+          const isUnread = status === "pending"
+          
+          return (
+            <div
+              key={item.id}
+              className={cn(
+                "flex items-start gap-4 p-4 hover:bg-accent/50 transition-colors",
+                isUnread && "bg-primary/5",
+              )}
+            >
+              <Avatar className="h-10 w-10 mt-1">
+                <AvatarFallback className="bg-secondary text-secondary-foreground">
+                  {getInitials(item.requesterName)}
+                </AvatarFallback>
+              </Avatar>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {item.unread && <div className="w-2 h-2 rounded-full bg-primary shrink-0" />}
-                    <Link href={`/officer/requests/${item.id}`} className="font-medium hover:text-primary truncate">
-                      {item.title}
-                    </Link>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {isUnread && <div className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                      <Link href={`/officer/requests/${item.id}`} className="font-medium hover:text-primary truncate">
+                        {item.title}
+                      </Link>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate mb-2">{item.description}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>{item.requesterName}</span>
+                      <span>•</span>
+                      <span>#{item.id}</span>
+                      <span>•</span>
+                      <span>{getRelativeTime(item.createdAt)}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate mb-2">{item.description}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{item.requester}</span>
-                    <span>•</span>
-                    <span>#{item.id}</span>
-                    <span>•</span>
-                    <span>
-                      {item.date} at {item.time}
-                    </span>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs", 
+                        priorityColors[item.priority as keyof typeof priorityColors] || priorityColors.Low
+                      )}
+                    >
+                      {item.priority}
+                    </Badge>
+                    <StatusBadge status={status} />
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/officer/requests/${item.id}`}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Assign to Me
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Mark as Resolved
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <ArrowRightLeft className="w-4 h-4 mr-2" />
+                          Transfer
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive">
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Close Request
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge
-                    variant="outline"
-                    className={cn("text-xs", priorityColors[item.priority as keyof typeof priorityColors])}
-                  >
-                    {item.priority}
-                  </Badge>
-                  <StatusBadge status={item.status} />
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/officer/requests/${item.id}`}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Take Ownership
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Mark as Resolved
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <ArrowRightLeft className="w-4 h-4 mr-2" />
-                        Transfer
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Cancel Request
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </CardContent>
     </Card>
   )

@@ -76,3 +76,10 @@ export interface RequestSummary {
   createdAt: string;
   updatedAt: string;
 }
+
+// Request Filter Types
+export interface RequestFilters {
+  status: string;
+  priority: string;
+  search: string;
+}

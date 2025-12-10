@@ -72,4 +72,31 @@ public class OfficerController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    /**
+     * Get inbox requests with filtering, sorting and search
+     * GET /api/officer/inbox?status=all&priority=all&search=&sortBy=createdAt&sortOrder=desc&page=0&size=20
+     */
+    @GetMapping("/inbox")
+    public ResponseEntity<?> getInboxRequests(
+            @RequestParam(defaultValue = "all") String status,
+            @RequestParam(defaultValue = "all") String priority,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortOrder,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
+    ) {
+        try {
+            Long officerId = Long.parseLong(authentication.getName());
+
+            List<RequestSummary> requests = officerService.getInboxRequests(
+                officerId, status, priority, search, sortBy, sortOrder, page, size
+            );
+            return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
