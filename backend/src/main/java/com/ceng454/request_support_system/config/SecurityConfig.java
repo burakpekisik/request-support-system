@@ -39,6 +39,10 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+
+                        // Token validation - requires authentication
+                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/api/auth/check").authenticated()
                         
                         // Role-based access
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

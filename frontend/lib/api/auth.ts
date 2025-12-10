@@ -92,6 +92,18 @@ class AuthService {
     }
     return new Error('An unknown error occurred');
   }
+
+  /**
+ * Quick token validity check
+ */
+  async checkToken(): Promise<{ valid: boolean; message: string }> {
+    try {
+      const response = await apiClient.get<{ valid: boolean; message: string }>('/auth/check');
+      return response;
+    } catch (error) {
+      return { valid: false, message: 'Token is invalid' };
+    }
+  }
 }
 
 // Singleton instance

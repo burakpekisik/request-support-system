@@ -37,3 +37,8 @@ export interface User {
   createdAt: string;
   isActive: boolean;
 }
+
+export interface TokenCheckResponse {
+  valid: boolean;
+  message: string;
+}
