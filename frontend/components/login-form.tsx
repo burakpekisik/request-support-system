@@ -58,7 +58,7 @@ export function LoginForm() {
     }
 
     if (!formData.password.trim()) {
-      setTcError("Şifre boş olamaz")
+      setTcError("Password cannot be empty")
       return
     }
 
@@ -83,11 +83,11 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="tcIdentity">TC Kimlik Numarası</Label>
+            <Label htmlFor="tcIdentity">TC Identity Number</Label>
             <Input
               id="tcIdentity"
               type="text"
-              placeholder="TC Kimlik Numaranızı girin"
+              placeholder="Enter your TC Identity Number"
               value={formData.tcIdentity}
               onChange={handleTCChange}
               required
@@ -100,12 +100,12 @@ export function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Şifre</Label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Şifrenizi girin"
+                placeholder="Enter your password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
@@ -131,7 +131,7 @@ export function LoginForm() {
 
           <div className="flex items-center justify-between text-sm">
             <Link href="/forgot-password" className="text-primary hover:underline">
-              Şifremi unuttum
+              Forgot password?
             </Link>
           </div>
 
@@ -139,17 +139,17 @@ export function LoginForm() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Giriş yapılıyor...
+                Signing in...
               </>
             ) : (
-              "Giriş Yap"
+              "Sign In"
             )}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            Henüz hesabınız yok mu?{" "}
+            Don't have an account?{" "}
             <Link href="/register" className="text-primary hover:underline font-medium">
-              Kayıt olun
+              Sign up
             </Link>
           </div>
         </form>

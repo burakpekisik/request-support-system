@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react";
-import { login, logout, register, isAuthenticated, getStoredUser } from "@/lib/api";
+import { authService } from "@/lib/api";
+import type { LoginRequest, RegisterRequest } from "@/lib/api/types";
 import { useRouter } from "next/navigation";
 
 export function useAuth() {
@@ -13,8 +14,8 @@ export function useAuth() {
 
   // Client-side only initialization
   useEffect(() => {
-    setUser(getStoredUser());
-    setIsAuth(isAuthenticated());
+    setUser(authService.getUser());
+    setIsAuth(authService.isAuthenticated());
   }, []);
 
   const handleLogin = useCallback(
@@ -22,7 +23,9 @@ export function useAuth() {
       setLoading(true);
       setError(null);
       try {
-        const userData = await login(tcNumber, password);
+        const loginData: LoginRequest = { tcNumber, password };
+        const userData = await authService.login(loginData);
+        
         setUser(userData);
         setIsAuth(true);
         
@@ -59,7 +62,17 @@ export function useAuth() {
       setLoading(true);
       setError(null);
       try {
-        const userData = await register(tcNumber, firstName, lastName, email, password, phoneNumber);
+        const registerData: RegisterRequest = {
+          tcNumber,
+          firstName,
+          lastName,
+          email,
+          password,
+          phoneNumber,
+        };
+        
+        const userData = await authService.register(registerData);
+        
         setUser(userData);
         setIsAuth(true);
         
@@ -85,7 +98,7 @@ export function useAuth() {
   );
 
   const handleLogout = useCallback(() => {
-    logout();
+    authService.logout();
     setUser(null);
     setIsAuth(false);
     router.push("/login");
