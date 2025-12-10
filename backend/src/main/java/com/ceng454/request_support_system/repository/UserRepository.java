@@ -117,4 +117,5 @@ public class UserRepository {
         
         return jdbcTemplate.queryForList(sql, Integer.class, officerId);
     }
+
 }
