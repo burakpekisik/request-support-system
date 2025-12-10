@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/officer")
@@ -139,6 +140,47 @@ public class OfficerController {
                 officerId, status, priority, search, sortBy, sortOrder, page, size
             );
             return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Get officer's own submitted requests
+     * GET /api/officer/my-requests?status=all&category=all&search=&sortBy=createdAt&sortOrder=desc&page=0&size=20
+     */
+    @GetMapping("/my-requests")
+    public ResponseEntity<?> getMyRequests(
+            @RequestParam(defaultValue = "all") String status,
+            @RequestParam(defaultValue = "all") String category,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortOrder,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication
+    ) {
+        try {
+            Long officerId = Long.parseLong(authentication.getName());
+
+            List<RequestSummary> requests = officerService.getMyRequests(
+                officerId, status, category, search, sortBy, sortOrder, page, size
+            );
+            return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Get all categories
+     * GET /api/officer/categories
+     */
+    @GetMapping("/categories")
+    public ResponseEntity<?> getCategories() {
+        try {
+            List<Map<String, Object>> categories = officerService.getAllCategories();
+            return ResponseEntity.ok(categories);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

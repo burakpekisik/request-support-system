@@ -86,6 +86,14 @@ export interface RequestSummary {
 // Request Filter Types
 export interface RequestFilters {
   status: string;
-  priority: string;
+  priority?: string;
+  category?: string;
   search: string;
+}
+
+// Category Types
+export interface Category {
+  id: number;
+  name: string;
+  description: string;
 }

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { officerService } from "@/lib/api/officer"
 import type { RequestSummary } from "@/lib/api/types"
 import { statusMapping, priorityColors, getInitials, getRelativeTime } from "@/lib/constants"
+import { LoadingState } from "@/components/loading-state"
 
 export function OfficerInboxPreview() {
   const [requests, setRequests] = useState<RequestSummary[]>([])
@@ -30,11 +31,7 @@ export function OfficerInboxPreview() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">Loading requests...</div>
-      </div>
-    )
+    return <LoadingState message="Loading requests..." />
   }
 
   if (requests.length === 0) {

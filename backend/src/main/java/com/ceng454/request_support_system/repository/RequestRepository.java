@@ -495,4 +495,89 @@ public class RequestRepository {
 
         return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
     }
+
+    /**
+     * Officer'ın kendi oluşturduğu talepleri filtrele ve getir
+     */
+    public List<RequestSummary> findMyRequests(
+            Long requesterId,
+            String status,
+            String category,
+            String search,
+            String sortBy,
+            String sortOrder,
+            int page,
+            int size
+    ) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                un.name as unit_name,
+                r.created_at,
+                r.updated_at
+            FROM requests r
+            INNER JOIN users u ON r.requester_id = u.id
+            INNER JOIN categories c ON r.category_id = c.id
+            INNER JOIN priorities p ON r.priority_id = p.id
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN units un ON r.unit_id = un.id
+            WHERE r.requester_id = ?
+        """);
+
+        List<Object> params = new java.util.ArrayList<>();
+        params.add(requesterId);
+
+        // Status filter - Enum-based approach
+        Status statusEnum = Status.fromFilterValue(status);
+        if (statusEnum != null) {
+            sql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
+        }
+
+        // Category filter
+        if (!"all".equalsIgnoreCase(category)) {
+            sql.append(" AND c.name LIKE ?");
+            params.add("%" + category + "%");
+        }
+
+        // Search filter
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR un.name LIKE ?)");
+            String searchPattern = "%" + search.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+
+        // Sorting
+        String orderByClause = switch (sortBy) {
+            case "status" -> " ORDER BY s.name " + sortOrder.toUpperCase();
+            case "category" -> " ORDER BY c.name " + sortOrder.toUpperCase();
+            case "unit" -> " ORDER BY un.name " + sortOrder.toUpperCase();
+            case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
+            default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
+        };
+        sql.append(orderByClause);
+
+        // Pagination
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(size);
+        params.add(page * size);
+
+        return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
+    }
+
+    /**
+     * Tüm kategorileri getir
+     */
+    public List<Map<String, Object>> findAllCategories() {
+        String sql = "SELECT id, name, description FROM categories WHERE is_active = 1 ORDER BY name ASC";
+        return jdbcTemplate.queryForList(sql);
+    }
 }

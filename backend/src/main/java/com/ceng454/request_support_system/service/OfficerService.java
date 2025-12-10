@@ -100,4 +100,29 @@ public class OfficerService {
             officerId, status, priority, search, sortBy, sortOrder, page, size
         );
     }
+
+    /**
+     * Officer'ın kendi oluşturduğu talepleri getir
+     */
+    public List<RequestSummary> getMyRequests(
+            Long officerId,
+            String status,
+            String category,
+            String search,
+            String sortBy,
+            String sortOrder,
+            int page,
+            int size
+    ) {
+        return requestRepository.findMyRequests(
+            officerId, status, category, search, sortBy, sortOrder, page, size
+        );
+    }
+
+    /**
+     * Tüm kategorileri getir
+     */
+    public List<Map<String, Object>> getAllCategories() {
+        return requestRepository.findAllCategories();
+    }
 }

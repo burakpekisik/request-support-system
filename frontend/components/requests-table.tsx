@@ -1,77 +1,92 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Eye } from "lucide-react"
+import { officerService } from "@/lib/api/officer"
+import type { RequestSummary, RequestFilters } from "@/lib/api/types"
+import { statusMapping, getRelativeTime } from "@/lib/constants"
+import { cn } from "@/lib/utils"
+import { LoadingState } from "@/components/loading-state"
 
-const requests = [
-  {
-    id: "1234",
-    title: "Library Access Card Not Working",
-    category: "IT Support",
-    unit: "Information Technology",
-    status: "in_progress" as const,
-    date: "2024-12-05",
-    lastUpdate: "2024-12-06",
-  },
-  {
-    id: "1233",
-    title: "Transcript Request",
-    category: "Academic Affairs",
-    unit: "Student Affairs",
-    status: "pending" as const,
-    date: "2024-12-04",
-    lastUpdate: "2024-12-04",
-  },
-  {
-    id: "1232",
-    title: "Dormitory Maintenance Issue",
-    category: "Facilities",
-    unit: "Housing Services",
-    status: "resolved" as const,
-    date: "2024-12-03",
-    lastUpdate: "2024-12-05",
-  },
-  {
-    id: "1231",
-    title: "Course Registration Help",
-    category: "Academic Affairs",
-    unit: "Registrar",
-    status: "resolved" as const,
-    date: "2024-12-02",
-    lastUpdate: "2024-12-03",
-  },
-  {
-    id: "1230",
-    title: "WiFi Connection Problem",
-    category: "IT Support",
-    unit: "Information Technology",
-    status: "cancelled" as const,
-    date: "2024-12-01",
-    lastUpdate: "2024-12-02",
-  },
-  {
-    id: "1229",
-    title: "Parking Permit Application",
-    category: "Facilities",
-    unit: "Facilities Management",
-    status: "pending" as const,
-    date: "2024-11-30",
-    lastUpdate: "2024-11-30",
-  },
-  {
-    id: "1228",
-    title: "Financial Aid Inquiry",
-    category: "Finance",
-    unit: "Finance Department",
-    status: "resolved" as const,
-    date: "2024-11-28",
-    lastUpdate: "2024-12-01",
-  },
-]
+interface RequestsTableProps {
+  filters: RequestFilters;
+}
 
-export function RequestsTable() {
+export function RequestsTable({ filters }: RequestsTableProps) {
+  const [requests, setRequests] = useState<RequestSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadRequests()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.status, filters.category, filters.search])
+
+  const loadRequests = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await officerService.getMyRequests({
+        status: filters.status,
+        category: filters.category,
+        search: filters.search,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        page: 0,
+        size: 50
+      })
+      setRequests(data)
+    } catch (error) {
+      console.error("Failed to load requests:", error)
+      setError(error instanceof Error ? error.message : 'Failed to load requests')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <LoadingState message="Loading requests..." variant="card" />
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="text-destructive">Error loading requests</div>
+            <div className="text-sm text-muted-foreground">{error}</div>
+            <Button onClick={loadRequests} variant="outline" size="sm" className="mt-2">
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (requests.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="text-muted-foreground">No requests found</div>
+            <div className="text-sm text-muted-foreground">
+              {filters.search || filters.status !== 'all' || filters.category !== 'all' 
+                ? 'Try adjusting your filters' 
+                : 'You haven\'t created any requests yet'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -89,34 +104,49 @@ export function RequestsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {requests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell className="font-medium">
-                  <Link href={`/requests/${request.id}`} className="text-primary hover:underline">
-                    #{request.id}
-                  </Link>
-                </TableCell>
-                <TableCell className="max-w-xs truncate">
-                  <Link href={`/requests/${request.id}`} className="hover:text-primary">
-                    {request.title}
-                  </Link>
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-muted-foreground">{request.category}</TableCell>
-                <TableCell className="hidden lg:table-cell text-muted-foreground">{request.unit}</TableCell>
-                <TableCell>
-                  <StatusBadge status={request.status} />
-                </TableCell>
-                <TableCell className="hidden sm:table-cell text-muted-foreground">{request.date}</TableCell>
-                <TableCell className="hidden xl:table-cell text-muted-foreground">{request.lastUpdate}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/requests/${request.id}`}>
-                      <Eye className="w-4 h-4" />
+            {requests.map((request) => {
+              const status = statusMapping[request.status] || "pending"
+              
+              return (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium">
+                    <Link href={`/requests/${request.id}`} className="text-primary hover:underline">
+                      #{request.id}
                     </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    <Link href={`/requests/${request.id}`} className="hover:text-primary">
+                      {request.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant="outline" className="text-xs">
+                      {request.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                    {request.unitName}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={status} />
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                    {getRelativeTime(request.createdAt)}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
+                    {getRelativeTime(request.updatedAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/requests/${request.id}`}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </CardContent>

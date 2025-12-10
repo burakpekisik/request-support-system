@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { officerService } from "@/lib/api/officer"
 import type { OfficerDashboardStats } from "@/lib/api/types"
+import { LoadingState } from "@/components/loading-state"
 
 export default function OfficerDashboard() {
   const [stats, setStats] = useState<OfficerDashboardStats>({
@@ -37,11 +38,7 @@ export default function OfficerDashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading dashboard...</div>
-      </div>
-    )
+    return <LoadingState message="Loading dashboard..." className="min-h-[400px]" />
   }
 
   return (

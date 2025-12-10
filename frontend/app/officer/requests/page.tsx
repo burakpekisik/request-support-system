@@ -1,11 +1,52 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { RequestsTable } from "@/components/requests-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Plus } from "lucide-react"
 import Link from "next/link"
+import type { RequestFilters, Category } from "@/lib/api/types"
+import { officerService } from "@/lib/api/officer"
 
 export default function OfficerRequestsPage() {
+  const [filters, setFilters] = useState<RequestFilters>({
+    status: "all",
+    category: "all",
+    search: "",
+  })
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoadingCategories(true)
+        const data = await officerService.getCategories()
+        setCategories(data)
+      } catch (error) {
+        console.error("Failed to fetch categories:", error)
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  const handleSearchChange = (value: string) => {
+    setFilters(prev => ({ ...prev, search: value }))
+  }
+
+  const handleStatusChange = (value: string) => {
+    setFilters(prev => ({ ...prev, status: value }))
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setFilters(prev => ({ ...prev, category: value }))
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -25,37 +66,48 @@ export default function OfficerRequestsPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search requests..." className="pl-9" />
+          <Input 
+            placeholder="Search requests..." 
+            className="pl-9" 
+            value={filters.search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
         </div>
-        <Select defaultValue="all">
+        <Select value={filters.status} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="waiting">Waiting</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="answered">Answered</SelectItem>
             <SelectItem value="waiting_response">Waiting Response</SelectItem>
             <SelectItem value="resolved_successfully">Resolved Successfully</SelectItem>
             <SelectItem value="resolved_negatively">Resolved Negatively</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
-        <Select defaultValue="all">
+        <Select value={filters.category} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="it">IT Support</SelectItem>
-            <SelectItem value="academic">Academic</SelectItem>
-            <SelectItem value="facilities">Facilities</SelectItem>
-            <SelectItem value="finance">Finance</SelectItem>
+            {isLoadingCategories ? (
+              <SelectItem value="loading" disabled>Loading...</SelectItem>
+            ) : (
+              categories.map((category) => (
+                <SelectItem key={category.id} value={category.name}>
+                  {category.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
 
-      <RequestsTable />
+      <RequestsTable filters={filters} />
     </div>
   )
 }

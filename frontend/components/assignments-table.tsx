@@ -13,6 +13,7 @@ import type { RequestSummary, RequestFilters } from "@/lib/api/types"
 import { statusMapping, priorityColors, getInitials, getRelativeTime } from "@/lib/constants"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { LoadingState } from "@/components/loading-state"
 
 interface AssignmentsTableProps {
   filters: RequestFilters;
@@ -51,15 +52,7 @@ export function AssignmentsTable({ filters }: AssignmentsTableProps) {
   }
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <div className="text-muted-foreground">Loading assignments...</div>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <LoadingState message="Loading assignments..." variant="card" />
   }
 
   if (error) {

@@ -19,6 +19,7 @@ import { MoreHorizontal, UserPlus, CheckCircle, XCircle, ArrowRightLeft, Eye } f
 import { officerService } from "@/lib/api/officer"
 import type { RequestSummary, RequestFilters } from "@/lib/api/types"
 import { statusMapping, priorityColors, getInitials, getRelativeTime } from "@/lib/constants"
+import { LoadingState } from "@/components/loading-state"
 
 interface OfficerInboxListProps {
   filters: RequestFilters;
@@ -57,15 +58,7 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
   }
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <div className="text-muted-foreground">Loading requests...</div>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <LoadingState message="Loading requests..." variant="card" />
   }
 
   if (error) {
