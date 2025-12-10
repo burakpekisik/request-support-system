@@ -1,0 +1,110 @@
+"use client"
+
+import { Bell, User, LogOut, Settings, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+
+interface HeaderProps {
+  userName?: string
+  userRole?: string
+  profileHref?: string
+}
+
+export function Header({ userName = "John Doe", userRole = "Student", profileHref = "/profile" }: HeaderProps) {
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-6 bg-card border-b border-border">
+      <div className="flex items-center gap-4">
+        <h1 className="text-lg font-semibold text-card-foreground">Welcome back, {userName.split(" ")[0]}</h1>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {/* Notifications */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="w-5 h-5" />
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground">
+                3
+              </Badge>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="font-medium">Notifications</p>
+            </div>
+            <div className="py-2">
+              <DropdownMenuItem className="flex flex-col items-start gap-1 px-4 py-3">
+                <p className="text-sm font-medium">Request #1234 Updated</p>
+                <p className="text-xs text-muted-foreground">Your request has been assigned to IT Support</p>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 px-4 py-3">
+                <p className="text-sm font-medium">New Reply</p>
+                <p className="text-xs text-muted-foreground">Officer replied to your request #1233</p>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 px-4 py-3">
+                <p className="text-sm font-medium">Request Resolved</p>
+                <p className="text-xs text-muted-foreground">Request #1230 has been marked as resolved</p>
+              </DropdownMenuItem>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="justify-center text-primary">View all notifications</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* User Profile Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 px-2">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
+              </Avatar>
+              <div className="hidden md:flex flex-col items-start">
+                <span className="text-sm font-medium">{userName}</span>
+                <span className="text-xs text-muted-foreground">{userRole}</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="font-medium">{userName}</p>
+              <p className="text-sm text-muted-foreground">{userRole}</p>
+            </div>
+            <DropdownMenuItem asChild>
+              <Link href={profileHref}>
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="text-destructive">
+              <Link href="/login">
+                <LogOut className="w-4 h-4 mr-2" />
+                Log out
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  )
+}
