@@ -43,3 +43,5 @@ secrets.yml
 node_modules
 /.kotlin/
 .next
+.idea/
+*.sql
