@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { OfficerDashboardStats, RequestSummary } from './types';
+import type { OfficerDashboardStats, OfficerAssignmentStats, RequestSummary } from './types';
 
 class OfficerService {
   /**
@@ -49,6 +49,40 @@ class OfficerService {
     queryParams.append('size', String(params.size || 20));
 
     const response = await apiClient.get<RequestSummary[]>(`/officer/inbox?${queryParams.toString()}`);
+    return response;
+  }
+
+  /**
+   * Get assignment statistics
+   */
+  async getAssignmentStats(): Promise<OfficerAssignmentStats> {
+    const response = await apiClient.get<OfficerAssignmentStats>('/officer/assignments/stats');
+    return response;
+  }
+
+  /**
+   * Get assigned requests with filtering, sorting and search
+   */
+  async getAssignedRequests(params: {
+    status?: string;
+    priority?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+    page?: number;
+    size?: number;
+  } = {}): Promise<RequestSummary[]> {
+    const queryParams = new URLSearchParams();
+    
+    queryParams.append('status', params.status || 'all');
+    queryParams.append('priority', params.priority || 'all');
+    queryParams.append('search', params.search || '');
+    queryParams.append('sortBy', params.sortBy || 'createdAt');
+    queryParams.append('sortOrder', params.sortOrder || 'desc');
+    queryParams.append('page', String(params.page || 0));
+    queryParams.append('size', String(params.size || 20));
+
+    const response = await apiClient.get<RequestSummary[]>(`/officer/assignments?${queryParams.toString()}`);
     return response;
   }
 }

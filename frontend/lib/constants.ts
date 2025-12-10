@@ -1,24 +1,23 @@
 // Status Badge Types
-export type StatusType = "pending" | "in_progress" | "resolved";
+export type StatusType = "pending" | "in_progress" | "answered" | "waiting_response" | "resolved_successfully" | "resolved_negatively" | "cancelled";
 
 // Status Mappings
 export const statusMapping: Record<string, StatusType> = {
-  "Beklemede": "pending",
   "Pending": "pending",
-  "İşlemde": "in_progress",
   "In Progress": "in_progress",
-  "Çözüldü": "resolved",
-  "Resolved": "resolved",
+  "Answered": "answered",
+  "Waiting Response": "waiting_response",
+  "Resolved Successfully": "resolved_successfully",
+  "Resolved Negatively": "resolved_negatively",
+  "Cancelled": "cancelled",
 };
 
-// Priority Colors
+// Priority Colors - Database: Low(#28a745), Normal(#17a2b8), High(#ffc107), Critical(#dc3545)
 export const priorityColors: Record<string, string> = {
-  Yüksek: "bg-destructive/20 text-destructive border-destructive/30",
-  High: "bg-destructive/20 text-destructive border-destructive/30",
-  Orta: "bg-warning/20 text-warning-foreground border-warning/30",
-  Medium: "bg-warning/20 text-warning-foreground border-warning/30",
-  Düşük: "bg-muted text-muted-foreground border-muted",
-  Low: "bg-muted text-muted-foreground border-muted",
+  Low: "bg-green-600/20 text-green-700 border-green-600/30",
+  Normal: "bg-cyan-500/20 text-cyan-700 border-cyan-500/30",
+  High: "bg-yellow-500/20 text-yellow-700 border-yellow-500/30",
+  Critical: "bg-red-600/20 text-red-700 border-red-600/30",
 };
 
 // Helper Functions

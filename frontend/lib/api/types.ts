@@ -63,6 +63,12 @@ export interface OfficerDashboardStats {
   resolvedTodayTrend: number;
 }
 
+export interface OfficerAssignmentStats {
+  totalAssigned: number;
+  pendingAction: number;
+  resolvedThisWeek: number;
+}
+
 export interface RequestSummary {
   id: number;
   title: string;

@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react"
 interface StatsCardProps {
   title: string
   value: string | number
+  description?: string
   icon: LucideIcon
   trend?: {
     value: number
@@ -14,7 +15,7 @@ interface StatsCardProps {
   iconClassName?: string
 }
 
-export function StatsCard({ title, value, icon: Icon, trend, className, iconClassName }: StatsCardProps) {
+export function StatsCard({ title, value, description, icon: Icon, trend, className, iconClassName }: StatsCardProps) {
   return (
     <Card className={cn("", className)}>
       <CardContent className="p-6">
@@ -22,6 +23,9 @@ export function StatsCard({ title, value, icon: Icon, trend, className, iconClas
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <p className="text-3xl font-bold text-card-foreground mt-1">{value}</p>
+            {description && (
+              <p className="text-xs text-muted-foreground mt-1">{description}</p>
+            )}
             {trend && (
               <p className={cn("text-sm mt-1", trend.isPositive ? "text-success" : "text-destructive")}>
                 {trend.isPositive ? "+" : "-"}

@@ -1,6 +1,8 @@
 package com.ceng454.request_support_system.repository;
 
 import com.ceng454.request_support_system.dto.RequestSummary;
+import com.ceng454.request_support_system.enums.Priority;
+import com.ceng454.request_support_system.enums.Status;
 import com.ceng454.request_support_system.model.Request;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -329,26 +331,142 @@ public class RequestRepository {
         List<Object> params = new java.util.ArrayList<>();
         params.add(officerId);
 
-        // Status filter
-        if (!"all".equalsIgnoreCase(status)) {
-            if ("pending".equalsIgnoreCase(status)) {
-                sql.append(" AND s.name = 'Beklemede'");
-            } else if ("in_progress".equalsIgnoreCase(status)) {
-                sql.append(" AND (s.name = 'İşleme Alındı' OR s.name = 'Cevaplandı')");
-            } else if ("resolved".equalsIgnoreCase(status)) {
-                sql.append(" AND s.name = 'Çözüldü'");
-            }
+        // Status filter - Enum-based approach
+        Status statusEnum = Status.fromFilterValue(status);
+        if (statusEnum != null) {
+            sql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
         }
 
-        // Priority filter
-        if (!"all".equalsIgnoreCase(priority)) {
-            if ("high".equalsIgnoreCase(priority)) {
-                sql.append(" AND (p.name = 'Yüksek' OR p.name = 'Kritik')");
-            } else if ("medium".equalsIgnoreCase(priority)) {
-                sql.append(" AND (p.name = 'Orta' OR p.name = 'Normal')");
-            } else if ("low".equalsIgnoreCase(priority)) {
-                sql.append(" AND p.name = 'Düşük'");
-            }
+        // Priority filter - Enum-based approach
+        Priority priorityEnum = Priority.fromFilterValue(priority);
+        if (priorityEnum != null) {
+            sql.append(" AND p.name = '").append(priorityEnum.getDisplayName()).append("'");
+        }
+
+        // Search filter
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)");
+            String searchPattern = "%" + search.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+
+        // Sorting
+        String orderByClause = switch (sortBy) {
+            case "priority" -> " ORDER BY p.level " + sortOrder.toUpperCase();
+            case "status" -> " ORDER BY s.name " + sortOrder.toUpperCase();
+            case "requester" -> " ORDER BY u.last_name " + sortOrder.toUpperCase();
+            case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
+            default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
+        };
+        sql.append(orderByClause);
+
+        // Pagination
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(size);
+        params.add(page * size);
+
+        return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
+    }
+
+    /**
+     * Officer'a atanmış taleplerin istatistiklerini getir
+     */
+    public Map<String, Integer> getAssignmentStats(Long officerId) {
+        // Toplam atanan
+        Integer totalAssigned = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM requests WHERE assigned_officer_id = ?",
+            Integer.class,
+            officerId
+        );
+
+        // Bekleyen/İşlemde olanlar (pending action)
+        Integer pendingAction = jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*) FROM requests r
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.assigned_officer_id = ?
+            AND s.name IN (?, ?, ?, ?)
+            """,
+            Integer.class,
+            officerId,
+            Status.PENDING.getDisplayName(),
+            Status.IN_PROGRESS.getDisplayName(),
+            Status.ANSWERED.getDisplayName(),
+            Status.WAITING_RESPONSE.getDisplayName()
+        );
+
+        // Bu hafta çözülenler
+        Integer resolvedThisWeek = jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*) FROM requests r
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.assigned_officer_id = ?
+            AND s.name IN (?, ?)
+            AND r.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            """,
+            Integer.class,
+            officerId,
+            Status.RESOLVED_SUCCESSFULLY.getDisplayName(),
+            Status.RESOLVED_NEGATIVELY.getDisplayName()
+        );
+
+        return Map.of(
+            "totalAssigned", totalAssigned != null ? totalAssigned : 0,
+            "pendingAction", pendingAction != null ? pendingAction : 0,
+            "resolvedThisWeek", resolvedThisWeek != null ? resolvedThisWeek : 0
+        );
+    }
+
+    /**
+     * Officer'a atanmış talepleri filtrele ve getir
+     */
+    public List<RequestSummary> findAssignedRequests(
+            Long officerId,
+            String status,
+            String priority,
+            String search,
+            String sortBy,
+            String sortOrder,
+            int page,
+            int size
+    ) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                un.name as unit_name,
+                r.created_at,
+                r.updated_at
+            FROM requests r
+            INNER JOIN users u ON r.requester_id = u.id
+            INNER JOIN categories c ON r.category_id = c.id
+            INNER JOIN priorities p ON r.priority_id = p.id
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN units un ON r.unit_id = un.id
+            WHERE r.assigned_officer_id = ?
+        """);
+
+        List<Object> params = new java.util.ArrayList<>();
+        params.add(officerId);
+
+        // Status filter - Enum-based approach
+        Status statusEnum = Status.fromFilterValue(status);
+        if (statusEnum != null) {
+            sql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
+        }
+
+        // Priority filter - Enum-based approach
+        Priority priorityEnum = Priority.fromFilterValue(priority);
+        if (priorityEnum != null) {
+            sql.append(" AND p.name = '").append(priorityEnum.getDisplayName()).append("'");
         }
 
         // Search filter

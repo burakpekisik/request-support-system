@@ -51,7 +51,11 @@ export default function OfficerInboxPage() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectItem value="answered">Answered</SelectItem>
+            <SelectItem value="waiting_response">Waiting Response</SelectItem>
+            <SelectItem value="resolved_successfully">Resolved Successfully</SelectItem>
+            <SelectItem value="resolved_negatively">Resolved Negatively</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filters.priority} onValueChange={handlePriorityChange}>
@@ -59,7 +63,8 @@ export default function OfficerInboxPage() {
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="all">All Priority</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
             <SelectItem value="low">Low</SelectItem>
