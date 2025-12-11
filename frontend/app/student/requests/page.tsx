@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { RequestsTable } from "@/components/requests-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Plus } from "lucide-react"
 import Link from "next/link"
-import type { RequestFilters } from "@/lib/api/types"
+import type { RequestFilters, Category } from "@/lib/api/types"
+import { commonService } from "@/lib/api/common"
 
 export default function StudentRequestsPage() {
   const [filters, setFilters] = useState<RequestFilters>({
@@ -15,6 +16,24 @@ export default function StudentRequestsPage() {
     category: "all",
     search: "",
   })
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoadingCategories(true)
+        const data = await commonService.getCategories()
+        setCategories(data)
+      } catch (error) {
+        console.error("Failed to fetch categories:", error)
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const handleSearchChange = (value: string) => {
     setFilters(prev => ({ ...prev, search: value }))
@@ -75,6 +94,15 @@ export default function StudentRequestsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
+            {isLoadingCategories ? (
+              <SelectItem value="loading" disabled>Loading...</SelectItem>
+            ) : (
+              categories.map((category) => (
+                <SelectItem key={category.id} value={category.name}>
+                  {category.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>

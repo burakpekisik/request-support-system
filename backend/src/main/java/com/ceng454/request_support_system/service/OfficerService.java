@@ -125,4 +125,11 @@ public class OfficerService {
     public List<Map<String, Object>> getAllCategories() {
         return requestRepository.findAllCategories();
     }
+
+    /**
+     * Tüm birimleri getir
+     */
+    public List<Map<String, Object>> getAllUnits() {
+        return requestRepository.findAllUnits();
+    }
 }

@@ -17,7 +17,7 @@ export default function NewRequestPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NewRequestForm />
+          <NewRequestForm userRole="student" />
         </CardContent>
       </Card>
     </div>

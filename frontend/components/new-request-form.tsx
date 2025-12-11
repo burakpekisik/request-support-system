@@ -2,49 +2,114 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, X, Loader2, FileText } from "lucide-react"
+import { Upload, X, Loader2, FileText, AlertCircle } from "lucide-react"
+import { commonService } from "@/lib/api/common"
+import type { Category, Unit } from "@/lib/api/types"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-const categories = [
-  { value: "it-support", label: "IT Support" },
-  { value: "academic", label: "Academic Affairs" },
-  { value: "facilities", label: "Facilities & Maintenance" },
-  { value: "finance", label: "Finance & Billing" },
-  { value: "housing", label: "Housing Services" },
-  { value: "other", label: "Other" },
-]
+interface NewRequestFormProps {
+  userRole?: string;
+}
 
-const units = [
-  { value: "it", label: "Information Technology" },
-  { value: "registrar", label: "Registrar Office" },
-  { value: "student-affairs", label: "Student Affairs" },
-  { value: "finance", label: "Finance Department" },
-  { value: "housing", label: "Housing Services" },
-  { value: "library", label: "Library Services" },
-  { value: "facilities", label: "Facilities Management" },
-]
-
-export function NewRequestForm() {
+export function NewRequestForm({ userRole = "officer" }: NewRequestFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [files, setFiles] = useState<File[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [units, setUnits] = useState<Unit[]>([])
+  const [isDragging, setIsDragging] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
-    category: "",
-    unit: "",
+    categoryId: "",
+    unitId: "",
     description: "",
   })
 
+  useEffect(() => {
+    loadFormData()
+  }, [])
+
+  const loadFormData = async () => {
+    try {
+      setIsLoadingData(true)
+      const [categoriesData, unitsData] = await Promise.all([
+        commonService.getCategories(),
+        commonService.getUnits(),
+      ])
+      setCategories(categoriesData)
+      setUnits(unitsData)
+    } catch (error) {
+      console.error("Failed to load form data:", error)
+      setError("Failed to load categories and units. Please refresh the page.")
+    } finally {
+      setIsLoadingData(false)
+    }
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles([...files, ...Array.from(e.target.files)])
+      processFiles(Array.from(e.target.files));
     }
+  }
+
+  const processFiles = (newFiles: File[]) => {
+    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const validExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.docx'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const validFiles = newFiles.filter(file => {
+      // Tip kontrolü
+      const isValidType = validTypes.includes(file.type);
+      const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+      
+      if (!isValidType && !hasValidExtension) {
+        setError(`Invalid file type: ${file.name}. Only PDF, PNG, JPG, or DOCX files are allowed.`);
+        return false;
+      }
+
+      // Boyut kontrolü
+      if (file.size > maxSize) {
+        setError(`File too large: ${file.name}. Maximum size is 10MB.`);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setFiles([...files, ...validFiles]);
+      setError(null);
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    processFiles(droppedFiles);
   }
 
   const removeFile = (index: number) => {
@@ -54,18 +119,47 @@ export function NewRequestForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      await commonService.createRequest({
+        title: formData.title,
+        description: formData.description,
+        unitId: parseInt(formData.unitId),
+        categoryId: parseInt(formData.categoryId),
+      }, files)
 
-    router.push("/student/requests")
-    setIsLoading(false)
+      // Navigate based on user role
+      const redirectPath = userRole === "student" ? "/student/requests" : "/officer/requests"
+      router.push(redirectPath)
+    } catch (error) {
+      console.error("Failed to create request:", error)
+      setError(error instanceof Error ? error.message : "Failed to create request. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoadingData) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading form...</span>
+      </div>
+    )
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-2">
-        <Label htmlFor="title">Request Title</Label>
+        <Label htmlFor="title">Request Title *</Label>
         <Input
           id="title"
           placeholder="Brief summary of your request"
@@ -78,10 +172,10 @@ export function NewRequestForm() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
+          <Label htmlFor="category">Category *</Label>
           <Select
-            value={formData.category}
-            onValueChange={(value) => setFormData({ ...formData, category: value })}
+            value={formData.categoryId}
+            onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
             required
           >
             <SelectTrigger id="category" className="h-11">
@@ -89,8 +183,8 @@ export function NewRequestForm() {
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
+                <SelectItem key={category.id} value={String(category.id)}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -98,15 +192,19 @@ export function NewRequestForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="unit">Unit</Label>
-          <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })} required>
+          <Label htmlFor="unit">Unit *</Label>
+          <Select 
+            value={formData.unitId} 
+            onValueChange={(value) => setFormData({ ...formData, unitId: value })} 
+            required
+          >
             <SelectTrigger id="unit" className="h-11">
               <SelectValue placeholder="Select a unit" />
             </SelectTrigger>
             <SelectContent>
               {units.map((unit) => (
-                <SelectItem key={unit.value} value={unit.value}>
-                  {unit.label}
+                <SelectItem key={unit.id} value={String(unit.id)}>
+                  {unit.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -129,8 +227,24 @@ export function NewRequestForm() {
 
       <div className="space-y-2">
         <Label>Attachments (Optional)</Label>
-        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-          <input type="file" id="files" multiple onChange={handleFileChange} className="hidden" />
+        <div 
+          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+            isDragging 
+              ? 'border-primary bg-primary/5' 
+              : 'border-border hover:border-primary/50'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input 
+            type="file" 
+            id="files" 
+            multiple 
+            accept=".pdf,.png,.jpg,.jpeg,.docx" 
+            onChange={handleFileChange} 
+            className="hidden" 
+          />
           <label htmlFor="files" className="cursor-pointer">
             <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground mb-1">Click to upload or drag and drop</p>

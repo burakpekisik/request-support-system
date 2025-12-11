@@ -52,6 +52,33 @@ class ApiClient {
     });
   }
 
+  async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const config: RequestInit = {
+      method: 'POST',
+      body: formData,
+    };
+
+    // Add auth token if exists
+    const token = storage.getToken();
+    if (token) {
+      config.headers = {
+        Authorization: `Bearer ${token}`,
+      };
+    }
+    // FormData için Content-Type ekleme - tarayıcı otomatik ekler
+
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,

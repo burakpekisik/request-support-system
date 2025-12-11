@@ -97,3 +97,19 @@ export interface Category {
   name: string;
   description: string;
 }
+
+// Unit Types
+export interface Unit {
+  id: number;
+  name: string;
+  description: string;
+}
+
+// Create Request Types
+export interface CreateRequest {
+  title: string;
+  description: string;
+  unitId: number;
+  categoryId: number;
+  priorityId?: number; // Optional - will be set by officer
+}

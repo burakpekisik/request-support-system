@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +35,8 @@ public class RequestService {
         request.setRequesterId(userId);
         request.setUnitId(dto.getUnitId());
         request.setCategoryId(dto.getCategoryId());
-        request.setPriorityId(dto.getPriorityId());
+        // Priority null ise Medium (2) olarak ata
+        request.setPriorityId(dto.getPriorityId() != null ? dto.getPriorityId() : 2);
         request.setTitle(dto.getTitle());
         request.setDescription(dto.getDescription());
         request.setCurrentStatusId(1); // ID 1 = "Beklemede" (Database seed verisine göre)
@@ -51,17 +53,24 @@ public class RequestService {
         timeline.setComment("Talep oluşturuldu.");
         timelineRepository.save(timeline);
 
-        // 4. Dosya Varsa Kaydet (Opsiyonel)
-        if (dto.getFileName() != null && !dto.getFileName().isEmpty()) {
-            Attachment attachment = new Attachment();
-            attachment.setRequestId(requestId);
-            attachment.setUploaderId(userId);
-            attachment.setTimelineId(null); // Talep açılışında yüklendi
-            attachment.setFileName(dto.getFileName());
-            attachment.setFilePath(dto.getFilePath()); // Dosya yükleme util servisinden gelen path
-            attachment.setFileType("unknown"); // Controller'dan alınabilir
+        // 4. Dosyaları Kaydet (Opsiyonel)
+        if (dto.getFiles() != null && !dto.getFiles().isEmpty()) {
+            for (CreateRequestDto.FileInfo fileInfo : dto.getFiles()) {
+                Attachment attachment = new Attachment();
+                attachment.setRequestId(requestId);
+                attachment.setUploaderId(userId);
+                attachment.setTimelineId(null); // Talep açılışında yüklendi
+                attachment.setFileName(fileInfo.getFileName());
+                attachment.setFilePath(fileInfo.getFilePath());
+                attachment.setFileType(fileInfo.getFileType() != null ? fileInfo.getFileType() : "unknown");
+                
+                // Double'ı BigDecimal'e çevir
+                if (fileInfo.getFileSizeMb() != null) {
+                    attachment.setFileSizeMb(BigDecimal.valueOf(fileInfo.getFileSizeMb()));
+                }
 
-            attachmentRepository.save(attachment);
+                attachmentRepository.save(attachment);
+            }
         }
     }
 

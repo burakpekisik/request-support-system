@@ -580,4 +580,12 @@ public class RequestRepository {
         String sql = "SELECT id, name, description FROM categories WHERE is_active = 1 ORDER BY name ASC";
         return jdbcTemplate.queryForList(sql);
     }
+
+    /**
+     * Tüm birimleri getir
+     */
+    public List<Map<String, Object>> findAllUnits() {
+        String sql = "SELECT id, name, description FROM units WHERE is_active = 1 ORDER BY name ASC";
+        return jdbcTemplate.queryForList(sql);
+    }
 }

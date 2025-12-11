@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Plus } from "lucide-react"
 import Link from "next/link"
 import type { RequestFilters, Category } from "@/lib/api/types"
-import { officerService } from "@/lib/api/officer"
+import { commonService } from "@/lib/api/common"
 
 export default function OfficerRequestsPage() {
   const [filters, setFilters] = useState<RequestFilters>({
@@ -23,7 +23,7 @@ export default function OfficerRequestsPage() {
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true)
-        const data = await officerService.getCategories()
+        const data = await commonService.getCategories()
         setCategories(data)
       } catch (error) {
         console.error("Failed to fetch categories:", error)

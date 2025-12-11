@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 public class CreateRequestDto {
     @NotBlank(message = "Başlık boş olamaz")
@@ -19,12 +22,25 @@ public class CreateRequestDto {
     @NotNull(message = "Kategori seçilmelidir")
     private Integer categoryId;
 
-    @NotNull(message = "Öncelik seçilmelidir")
+    // Priority başta null, officer tarafından sonradan atanacak
     private Integer priorityId;
 
     // Dosya yükleme bilgileri (Controller'da dosya yüklendikten sonra buraya set edilir)
     private String fileName;
     private String filePath;
+    private String fileType;
+    private Double fileSizeMb;
+    
+    // Çoklu dosya desteği
+    private List<FileInfo> files = new ArrayList<>();
+    
+    @Data
+    public static class FileInfo {
+        private String fileName;
+        private String filePath;
+        private String fileType;
+        private Double fileSizeMb;
+    }
 
     public String getTitle() {
         return title;
@@ -80,5 +96,21 @@ public class CreateRequestDto {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Double getFileSizeMb() {
+        return fileSizeMb;
+    }
+
+    public void setFileSizeMb(Double fileSizeMb) {
+        this.fileSizeMb = fileSizeMb;
     }
 }

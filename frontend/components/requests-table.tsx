@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Eye } from "lucide-react"
-import { officerService } from "@/lib/api/officer"
+import { commonService } from "@/lib/api/common"
 import type { RequestSummary, RequestFilters } from "@/lib/api/types"
 import { statusMapping, getRelativeTime } from "@/lib/constants"
 import { cn } from "@/lib/utils"
@@ -32,7 +32,7 @@ export function RequestsTable({ filters }: RequestsTableProps) {
     setLoading(true)
     setError(null)
     try {
-      const data = await officerService.getMyRequests({
+      const data = await commonService.getMyRequests({
         status: filters.status,
         category: filters.category,
         search: filters.search,
