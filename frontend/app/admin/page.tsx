@@ -1,10 +1,44 @@
+"use client"
+
 import { StatsCard } from "@/components/stats-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Users, FileText, CheckCircle, Clock, TrendingUp, Building2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { adminService } from "@/lib/api/admin"
 
 export default function AdminDashboard() {
+  const [totalUsers, setTotalUsers] = useState<number | string>();
+  const [totalUserChange, setTotalUserChange] = useState({label: '', percentage: 0, isPositive: true});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    adminService
+      .getAdminStatsTotalUserCount()
+      .then((count) => {
+        setTotalUsers(count);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user count");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+    adminService
+      .getAdminStatsTotalUserChangePercentage()
+      .then((response) => {
+        setTotalUserChange(response);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user percentage change");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -15,7 +49,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Total Users" value={1247} icon={Users} trend={{ value: 12, isPositive: true }} />
+        <StatsCard title="Total Users" value={totalUsers} icon={Users} trend={{ value: totalUserChange.percentage, isPositive: totalUserChange.isPositive }} />
         <StatsCard title="Total Requests" value={3842} icon={FileText} trend={{ value: 8, isPositive: true }} />
         <StatsCard title="Resolved This Month" value={892} icon={CheckCircle} trend={{ value: 15, isPositive: true }} />
         <StatsCard title="Pending Requests" value={156} icon={Clock} />

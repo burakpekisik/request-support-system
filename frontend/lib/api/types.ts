@@ -201,3 +201,9 @@ export interface AddResponseResult {
   timelineId: number;
   attachmentCount: number;
 }
+
+export interface AdminUserChangeStats {
+  label: string;
+  percentage: number;
+  isPositive: boolean; 
+}
