@@ -4,7 +4,6 @@ package com.ceng454.request_support_system.repository;
 import com.ceng454.request_support_system.model.RequestTimeline;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,10 +22,10 @@ public class TimelineRepository {
     // Bir talebin tüm tarihçesini getir (Sohbet geçmişi gibi)
     public List<RequestTimeline> findByRequestId(Long requestId) {
         String sql = """
-            SELECT t.*, u.first_name, u.last_name 
-            FROM request_timeline t 
-            JOIN users u ON t.actor_id = u.id 
-            WHERE request_id = ? 
+            SELECT t.*, u.first_name, u.last_name
+            FROM request_timeline t
+            JOIN users u ON t.actor_id = u.id
+            WHERE request_id = ?
             ORDER BY t.created_at ASC
         """;
 
