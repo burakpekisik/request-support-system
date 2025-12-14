@@ -9,7 +9,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     <div className="flex h-screen bg-background">
       <Sidebar role="student" />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header userName="Ahmet Yılmaz" userRole="Student" />
+        <Header />
         <main className="flex-1 overflow-y-auto p-6">
           <RequestDetailView requestId={id} />
         </main>

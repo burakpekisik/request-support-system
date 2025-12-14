@@ -73,6 +73,7 @@ class AuthService {
   private saveAuthData(response: AuthResponse): void {
     storage.setToken(response.token);
     storage.setUserData({
+      id: response.userId,
       firstName: response.firstName,
       lastName: response.lastName,
       email: response.email,

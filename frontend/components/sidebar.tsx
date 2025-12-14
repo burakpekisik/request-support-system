@@ -87,7 +87,18 @@ export function Sidebar({ role }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
         {items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+          // For officer request detail pages (/officer/requests/[id]), don't highlight "My Requests" or "Dashboard"
+          const isRequestDetailPage = pathname.match(/^\/officer\/requests\/\d+$/)
+          let isActive = false
+          
+          if (isRequestDetailPage) {
+            // On request detail page, only highlight if this is the exact path (none should match)
+            isActive = pathname === item.href
+          } else {
+            // Normal behavior for other pages
+            isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+          }
+          
           return (
             <Link
               key={item.href}

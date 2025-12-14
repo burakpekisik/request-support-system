@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { RequestSummary, Category, Unit, CreateRequest } from './types';
+import type { RequestSummary, Category, Unit, CreateRequest, RequestDetail, TimelineEntry, AddResponseRequest, AddResponseResult } from './types';
 
 class CommonService {
   /**
@@ -63,6 +63,55 @@ class CommonService {
     }
 
     const response = await apiClient.postFormData<{ message: string }>('/requests', formData);
+    return response;
+  }
+
+  /**
+   * Get request details by ID
+   */
+  async getRequestDetail(requestId: number | string): Promise<RequestDetail> {
+    const response = await apiClient.get<RequestDetail>(`/requests/${requestId}`);
+    return response;
+  }
+
+  /**
+   * Get timeline/conversation history for a request
+   */
+  async getTimeline(requestId: number | string): Promise<TimelineEntry[]> {
+    const response = await apiClient.get<TimelineEntry[]>(`/requests/${requestId}/timeline`);
+    return response;
+  }
+
+  /**
+   * Add response/comment to a request with optional file attachments
+   */
+  async addResponse(requestId: number | string, data: AddResponseRequest, files?: File[]): Promise<AddResponseResult> {
+    const formData = new FormData();
+    formData.append('newStatusId', String(data.newStatusId));
+    
+    if (data.comment) {
+      formData.append('comment', data.comment);
+    }
+
+    // Add files if any
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+    }
+
+    const response = await apiClient.postFormData<AddResponseResult>(`/requests/${requestId}/responses`, formData);
+    return response;
+  }
+
+  /**
+   * Take ownership of a request (assign to current officer)
+   */
+  async takeOwnership(requestId: number | string): Promise<{ message: string; newStatusId: number }> {
+    const response = await apiClient.post<{ message: string; newStatusId: number }>(
+      `/requests/${requestId}/take-ownership`,
+      {}
+    );
     return response;
   }
 }

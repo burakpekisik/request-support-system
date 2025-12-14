@@ -40,6 +40,7 @@ export interface User {
 }
 
 export interface UserData {
+  id: number;
   firstName: string;
   lastName: string;
   email: string;
@@ -122,4 +123,81 @@ export interface ProfileFormData {
   email: string;
   tc_number: string;
   phone: string;
+}
+
+// Request Detail Types
+export interface RequestDetail {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  statusId: number;
+  statusColor: string;
+  unitName: string;
+  unitId: number;
+  priority: string;
+  priorityColor: string;
+  priorityId: number;
+  category: string;
+  categoryId: number;
+  createdAt: string;
+  updatedAt: string;
+  requesterId: number;
+  requesterName: string;
+  requesterEmail: string;
+  requesterAvatarUrl?: string;
+  assignedOfficerId?: number;
+  assignedOfficerName?: string;
+}
+
+// Timeline Entry Types
+export interface TimelineEntry {
+  id: number;
+  requestId: number;
+  actorId: number;
+  actorName: string;
+  actorAvatarUrl?: string;
+  actorRole: string; // STUDENT, OFFICER, ADMIN
+  previousStatusId?: number;
+  previousStatus?: string;
+  newStatusId: number;
+  newStatus: string;
+  comment?: string;
+  attachments?: TimelineAttachment[];
+  createdAt: string;
+}
+
+// Timeline Attachment Type (simplified)
+export interface TimelineAttachment {
+  id: number;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSizeMb: number;
+}
+
+// Add Response Request Types
+export interface AddResponseRequest {
+  newStatusId: number;
+  comment?: string;
+}
+
+// Attachment Types
+export interface Attachment {
+  id: number;
+  requestId: number;
+  uploaderId: number;
+  timelineId?: number;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSizeMb: number;
+  createdAt: string;
+}
+
+// Add Response Result Types
+export interface AddResponseResult {
+  message: string;
+  timelineId: number;
+  attachmentCount: number;
 }
