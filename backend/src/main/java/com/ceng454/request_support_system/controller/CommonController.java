@@ -1,8 +1,16 @@
 package com.ceng454.request_support_system.controller;
 
+import com.ceng454.request_support_system.dto.AddTimelineEntryDto;
 import com.ceng454.request_support_system.dto.CreateRequestDto;
+import com.ceng454.request_support_system.dto.RequestDetailDto;
 import com.ceng454.request_support_system.dto.RequestSummary;
+import com.ceng454.request_support_system.dto.TimelineEntryDto;
 import com.ceng454.request_support_system.dto.UpdateProfileDto;
+import com.ceng454.request_support_system.model.Attachment;
+import com.ceng454.request_support_system.model.RequestTimeline;
+import com.ceng454.request_support_system.repository.RequestRepository;
+import com.ceng454.request_support_system.repository.TimelineRepository;
+import com.ceng454.request_support_system.service.AttachmentService;
 import com.ceng454.request_support_system.service.OfficerService;
 import com.ceng454.request_support_system.service.ProfileService;
 import com.ceng454.request_support_system.service.RequestService;
@@ -19,6 +27,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +47,15 @@ public class CommonController {
 
     @Autowired
     private ProfileService profileService;
+
+    @Autowired
+    private AttachmentService attachmentService;
+
+    @Autowired
+    private RequestRepository requestRepository;
+
+    @Autowired
+    private TimelineRepository timelineRepository;
 
     @Value("${app.upload.attachment.dir}")
     private String uploadDir;
@@ -213,6 +232,208 @@ public class CommonController {
             return ResponseEntity.ok(Map.of(
                 "message", "Avatar uploaded successfully",
                 "avatarUrl", avatarUrl
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Get single request details by ID
+     * GET /api/requests/{id}
+     */
+    @GetMapping("/requests/{id}")
+    public ResponseEntity<?> getRequestDetail(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        try {
+            Map<String, Object> requestData = requestRepository.findById(id);
+            
+            if (requestData == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            RequestDetailDto dto = RequestDetailDto.builder()
+                    .id(((Number) requestData.get("id")).longValue())
+                    .title((String) requestData.get("title"))
+                    .description((String) requestData.get("description"))
+                    .status((String) requestData.get("status_name"))
+                    .statusId(((Number) requestData.get("current_status_id")).intValue())
+                    .statusColor((String) requestData.get("status_color"))
+                    .unitName((String) requestData.get("unit_name"))
+                    .unitId(((Number) requestData.get("unit_id")).intValue())
+                    .priority((String) requestData.get("priority_name"))
+                    .priorityColor((String) requestData.get("priority_color"))
+                    .priorityId(((Number) requestData.get("priority_id")).intValue())
+                    .category((String) requestData.get("category_name"))
+                    .categoryId(((Number) requestData.get("category_id")).intValue())
+                    .createdAt(convertToLocalDateTime(requestData.get("created_at")))
+                    .updatedAt(convertToLocalDateTime(requestData.get("updated_at")))
+                    .requesterId(((Number) requestData.get("requester_id")).longValue())
+                    .requesterName((String) requestData.get("requester_name"))
+                    .requesterEmail((String) requestData.get("requester_email"))
+                    .requesterAvatarUrl((String) requestData.get("requester_avatar_url"))
+                    .assignedOfficerId(requestData.get("assigned_officer_id") != null ? 
+                            ((Number) requestData.get("assigned_officer_id")).longValue() : null)
+                    .assignedOfficerName((String) requestData.get("assigned_officer_name"))
+                    .build();
+
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Helper method to convert database date to LocalDateTime
+     */
+    private LocalDateTime convertToLocalDateTime(Object dateObj) {
+        if (dateObj == null) {
+            return null;
+        }
+        if (dateObj instanceof LocalDateTime) {
+            return (LocalDateTime) dateObj;
+        }
+        if (dateObj instanceof Timestamp) {
+            return ((Timestamp) dateObj).toLocalDateTime();
+        }
+        return null;
+    }
+
+    /**
+     * Get timeline/conversation history for a request
+     * GET /api/requests/{id}/timeline
+     */
+    @GetMapping("/requests/{id}/timeline")
+    public ResponseEntity<?> getRequestTimeline(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        try {
+            List<TimelineEntryDto> timeline = timelineRepository.findByRequestIdAsDto(id);
+            
+            // Fetch attachments for each timeline entry
+            for (TimelineEntryDto entry : timeline) {
+                List<com.ceng454.request_support_system.dto.AttachmentDto> attachments = 
+                    attachmentService.getAttachmentDtosByTimelineId(entry.getId());
+                entry.setAttachments(attachments);
+            }
+            
+            return ResponseEntity.ok(timeline);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Take ownership of a request (assign to current officer)
+     * POST /api/requests/{id}/take-ownership
+     */
+    @PostMapping("/requests/{id}/take-ownership")
+    public ResponseEntity<?> takeOwnership(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        try {
+            Long officerId = Long.parseLong(authentication.getName());
+            
+            // Check if request exists
+            Map<String, Object> requestData = requestRepository.findById(id);
+            if (requestData == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Check if request is already assigned to someone
+            Object assignedOfficerIdObj = requestData.get("assigned_officer_id");
+            if (assignedOfficerIdObj != null) {
+                Long currentAssignedOfficerId = ((Number) assignedOfficerIdObj).longValue();
+                if (currentAssignedOfficerId.equals(officerId)) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "You are already assigned to this request"
+                    ));
+                }
+                // Optional: Prevent taking ownership if already assigned to someone else
+                // return ResponseEntity.badRequest().body(Map.of(
+                //     "error", "This request is already assigned to another officer"
+                // ));
+            }
+            
+            // Get current status
+            Integer currentStatusId = requestRepository.getCurrentStatusId(id);
+            
+            // If request is pending (status 1), change to in_progress (status 2)
+            Integer newStatusId = currentStatusId;
+            if (currentStatusId != null && currentStatusId == 1) {
+                newStatusId = 2; // in_progress
+            }
+            
+            // Update request with new officer and optionally new status
+            requestRepository.updateStatusAndAssignment(id, newStatusId, officerId);
+            
+            // Create timeline entry for the ownership change
+            RequestTimeline timeline = new RequestTimeline();
+            timeline.setRequestId(id);
+            timeline.setActorId(officerId);
+            timeline.setPreviousStatusId(currentStatusId);
+            timeline.setNewStatusId(newStatusId);
+            timeline.setComment("Took ownership of this request");
+            timelineRepository.save(timeline);
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Successfully took ownership of the request",
+                "newStatusId", newStatusId
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Add response/comment to a request (updates timeline)
+     * POST /api/requests/{id}/responses
+     * Supports multipart/form-data for file attachments
+     */
+    @PostMapping(value = "/requests/{id}/responses", consumes = {"multipart/form-data", "application/json"})
+    public ResponseEntity<?> addResponse(
+            @PathVariable Long id,
+            @RequestParam("newStatusId") Integer newStatusId,
+            @RequestParam(value = "comment", required = false) String comment,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            Authentication authentication
+    ) {
+        try {
+            Long userId = Long.parseLong(authentication.getName());
+            
+            // Get current status
+            Integer currentStatusId = requestRepository.getCurrentStatusId(id);
+            
+            // Create timeline entry
+            RequestTimeline timeline = new RequestTimeline();
+            timeline.setRequestId(id);
+            timeline.setActorId(userId);
+            timeline.setPreviousStatusId(currentStatusId);
+            timeline.setNewStatusId(newStatusId);
+            timeline.setComment(comment);
+            
+            // Save timeline entry and get the generated ID
+            Long timelineId = timelineRepository.save(timeline);
+            
+            // Upload attachments if any
+            List<Attachment> savedAttachments = null;
+            if (files != null && files.length > 0) {
+                savedAttachments = attachmentService.uploadAttachments(id, userId, timelineId, files);
+            }
+            
+            // Update request status if changed
+            if (!currentStatusId.equals(newStatusId)) {
+                requestRepository.updateStatus(id, newStatusId);
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Response added successfully",
+                "timelineId", timelineId,
+                "attachmentCount", savedAttachments != null ? savedAttachments.size() : 0
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

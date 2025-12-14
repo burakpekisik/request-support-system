@@ -588,4 +588,61 @@ public class RequestRepository {
         String sql = "SELECT id, name, description FROM units WHERE is_active = 1 ORDER BY name ASC";
         return jdbcTemplate.queryForList(sql);
     }
+
+    /**
+     * Tek bir request'i ID ile getir (detaylı)
+     */
+    public Map<String, Object> findById(Long requestId) {
+        String sql = """
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                r.created_at,
+                r.updated_at,
+                r.requester_id,
+                r.assigned_officer_id,
+                r.unit_id,
+                r.category_id,
+                r.priority_id,
+                r.current_status_id,
+                s.name as status_name,
+                s.color_code as status_color,
+                p.name as priority_name,
+                p.color_code as priority_color,
+                c.name as category_name,
+                un.name as unit_name,
+                CONCAT(req.first_name, ' ', req.last_name) as requester_name,
+                req.email as requester_email,
+                req.avatar_url as requester_avatar_url,
+                CONCAT(off.first_name, ' ', off.last_name) as assigned_officer_name
+            FROM requests r
+            INNER JOIN statuses s ON r.current_status_id = s.id
+            INNER JOIN priorities p ON r.priority_id = p.id
+            INNER JOIN categories c ON r.category_id = c.id
+            INNER JOIN units un ON r.unit_id = un.id
+            INNER JOIN users req ON r.requester_id = req.id
+            LEFT JOIN users off ON r.assigned_officer_id = off.id
+            WHERE r.id = ?
+        """;
+        
+        List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, requestId);
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    /**
+     * Request'in current_status_id'sini getir
+     */
+    public Integer getCurrentStatusId(Long requestId) {
+        String sql = "SELECT current_status_id FROM requests WHERE id = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, requestId);
+    }
+
+    /**
+     * Request durumunu güncelle
+     */
+    public void updateStatus(Long requestId, Integer newStatusId) {
+        String sql = "UPDATE requests SET current_status_id = ?, updated_at = NOW() WHERE id = ?";
+        jdbcTemplate.update(sql, newStatusId, requestId);
+    }
 }

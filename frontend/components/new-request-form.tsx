@@ -238,7 +238,7 @@ export function NewRequestForm({ userRole = "officer" }: NewRequestFormProps) {
             type="file" 
             id="files" 
             multiple 
-            accept=".pdf,.png,.jpg,.jpeg,.docx" 
+            accept={ATTACHMENT_VALID_EXTENSIONS.join(',')} 
             onChange={handleFileChange} 
             className="hidden" 
           />
