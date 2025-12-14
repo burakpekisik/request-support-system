@@ -118,4 +118,23 @@ public class UserRepository {
         return jdbcTemplate.queryForList(sql, Integer.class, officerId);
     }
 
+    // Kullanıcı profilini güncelle (UPDATE)
+    public void updateProfile(Long userId, String firstName, String lastName, String email, String phoneNumber) {
+        String sql = "UPDATE users SET first_name = ?, last_name = ?, email = ?, phone_number = ? WHERE id = ?";
+        jdbcTemplate.update(sql, firstName, lastName, email, phoneNumber, userId);
+    }
+
+    // Avatar URL güncelle
+    public void updateAvatarUrl(Long userId, String avatarUrl) {
+        String sql = "UPDATE users SET avatar_url = ? WHERE id = ?";
+        jdbcTemplate.update(sql, avatarUrl, userId);
+    }
+
+    // Email benzersizlik kontrolü (kendisi hariç)
+    public boolean existsByEmailExcludingUser(String email, Long userId) {
+        String sql = "SELECT COUNT(*) FROM users WHERE email = ? AND id != ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email, userId);
+        return count != null && count > 0;
+    }
+
 }

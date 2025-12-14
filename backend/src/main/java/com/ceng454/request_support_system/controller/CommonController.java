@@ -2,9 +2,13 @@ package com.ceng454.request_support_system.controller;
 
 import com.ceng454.request_support_system.dto.CreateRequestDto;
 import com.ceng454.request_support_system.dto.RequestSummary;
+import com.ceng454.request_support_system.dto.UpdateProfileDto;
 import com.ceng454.request_support_system.service.OfficerService;
+import com.ceng454.request_support_system.service.ProfileService;
 import com.ceng454.request_support_system.service.RequestService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -31,8 +35,18 @@ public class CommonController {
     @Autowired
     private RequestService requestService;
 
-    private static final String UPLOAD_DIR = "uploads/attachments/";
-    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("pdf", "png", "jpg", "jpeg", "docx");
+    @Autowired
+    private ProfileService profileService;
+
+    @Value("${app.upload.attachment.dir}")
+    private String uploadDir;
+
+    @Value("${app.upload.attachment.allowed-extensions}")
+    private String allowedExtensionsConfig;
+
+    private List<String> getAllowedExtensions() {
+        return Arrays.asList(allowedExtensionsConfig.split(","));
+    }
 
     /**
      * Get all categories (shared endpoint for all users)
@@ -114,9 +128,9 @@ public class CommonController {
             // Dosya yükleme işlemi
             if (files != null && files.length > 0) {
                 // Upload dizinini oluştur
-                File uploadDir = new File(UPLOAD_DIR);
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
+                File uploadDirFile = new File(uploadDir);
+                if (!uploadDirFile.exists()) {
+                    uploadDirFile.mkdirs();
                 }
 
                 // Tüm dosyaları işle
@@ -129,7 +143,7 @@ public class CommonController {
                             fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
                         }
 
-                        if (!ALLOWED_EXTENSIONS.contains(fileExtension)) {
+                        if (!getAllowedExtensions().contains(fileExtension)) {
                             return ResponseEntity.badRequest().body(
                                 Map.of("error", "Invalid file type: " + originalFilename + ". Only PDF, PNG, JPG, JPEG, and DOCX files are allowed.")
                             );
@@ -137,7 +151,7 @@ public class CommonController {
 
                         // Benzersiz dosya adı oluştur
                         String uniqueFilename = UUID.randomUUID().toString() + "." + fileExtension;
-                        String filePath = UPLOAD_DIR + uniqueFilename;
+                        String filePath = uploadDir + uniqueFilename;
 
                         // Dosyayı kaydet
                         Path path = Paths.get(filePath);
@@ -161,6 +175,45 @@ public class CommonController {
             return ResponseEntity.ok(Map.of("message", "Request created successfully"));
         } catch (IOException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "File upload failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Update user profile (shared endpoint for all users)
+     * PUT /api/profile
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(
+            @Valid @RequestBody UpdateProfileDto dto,
+            Authentication authentication
+    ) {
+        try {
+            Long userId = Long.parseLong(authentication.getName());
+            profileService.updateProfile(userId, dto);
+            return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Upload user avatar (shared endpoint for all users)
+     * POST /api/profile/avatar
+     */
+    @PostMapping("/profile/avatar")
+    public ResponseEntity<?> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        try {
+            Long userId = Long.parseLong(authentication.getName());
+            String avatarUrl = profileService.uploadAvatar(userId, file);
+            return ResponseEntity.ok(Map.of(
+                "message", "Avatar uploaded successfully",
+                "avatarUrl", avatarUrl
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

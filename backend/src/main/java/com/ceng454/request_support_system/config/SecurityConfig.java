@@ -39,6 +39,9 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        
+                        // Static files (avatars, attachments)
+                        .requestMatchers("/uploads/**").permitAll()
 
                         // Token validation - requires authentication
                         .requestMatchers("/api/auth/me").authenticated()

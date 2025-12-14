@@ -46,6 +46,7 @@ export interface UserData {
   tcNumber: string;
   phoneNumber: string;
   role: string;
+  avatarUrl?: string;
 }
 
 export interface TokenCheckResponse {
@@ -112,4 +113,13 @@ export interface CreateRequest {
   unitId: number;
   categoryId: number;
   priorityId?: number; // Optional - will be set by officer
+}
+
+// Profile Form Types
+export interface ProfileFormData {
+  name: string;
+  surname: string;
+  email: string;
+  tc_number: string;
+  phone: string;
 }

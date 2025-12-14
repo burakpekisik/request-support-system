@@ -10,12 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { UserData } from "@/lib/api/types"
-import { formatRole, getInitials } from "@/lib/constants"
+import { formatRole, getInitials, getFullStaticUrl } from "@/lib/constants"
 import { storage } from "@/lib/storage"
 
 interface HeaderProps {
@@ -90,6 +90,7 @@ export function Header({ profileHref = "/profile" }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
+                <AvatarImage src={getFullStaticUrl(userData?.avatarUrl) || undefined} alt={userName} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
               </Avatar>
               <div className="hidden md:flex flex-col items-start">

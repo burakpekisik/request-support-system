@@ -13,6 +13,7 @@ import { Upload, X, Loader2, FileText, AlertCircle } from "lucide-react"
 import { commonService } from "@/lib/api/common"
 import type { Category, Unit } from "@/lib/api/types"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ATTACHMENT_VALID_TYPES, ATTACHMENT_VALID_EXTENSIONS, ATTACHMENT_MAX_SIZE } from "@/lib/constants"
 
 interface NewRequestFormProps {
   userRole?: string;
@@ -62,14 +63,10 @@ export function NewRequestForm({ userRole = "officer" }: NewRequestFormProps) {
   }
 
   const processFiles = (newFiles: File[]) => {
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    const validExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.docx'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
-
     const validFiles = newFiles.filter(file => {
       // Tip kontrolü
-      const isValidType = validTypes.includes(file.type);
-      const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+      const isValidType = ATTACHMENT_VALID_TYPES.includes(file.type);
+      const hasValidExtension = ATTACHMENT_VALID_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
       
       if (!isValidType && !hasValidExtension) {
         setError(`Invalid file type: ${file.name}. Only PDF, PNG, JPG, or DOCX files are allowed.`);
@@ -77,7 +74,7 @@ export function NewRequestForm({ userRole = "officer" }: NewRequestFormProps) {
       }
 
       // Boyut kontrolü
-      if (file.size > maxSize) {
+      if (file.size > ATTACHMENT_MAX_SIZE) {
         setError(`File too large: ${file.name}. Maximum size is 10MB.`);
         return false;
       }

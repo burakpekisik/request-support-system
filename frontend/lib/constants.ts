@@ -20,6 +20,25 @@ export const priorityColors: Record<string, string> = {
   Critical: "bg-red-600/20 text-red-700 border-red-600/30",
 };
 
+// File Upload Constants
+export const AVATAR_VALID_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+export const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+export const ATTACHMENT_VALID_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+export const ATTACHMENT_VALID_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.docx'];
+export const ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+// Backend Base URL (removes /api from API URL)
+export const getBackendBaseUrl = (): string => {
+  return process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080';
+};
+
+// Get full URL for static files (avatars, attachments)
+export const getFullStaticUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http') || url.startsWith('blob:')) return url;
+  return `${getBackendBaseUrl()}${url}`;
+};
+
 // Helper Functions
 export function formatRole(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
