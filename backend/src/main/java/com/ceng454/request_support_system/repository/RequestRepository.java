@@ -645,4 +645,45 @@ public class RequestRepository {
         String sql = "UPDATE requests SET current_status_id = ?, updated_at = NOW() WHERE id = ?";
         jdbcTemplate.update(sql, newStatusId, requestId);
     }
+
+    // ========== Student Dashboard Methods ==========
+
+    public long countTotalByRequesterId(Long requesterId) {
+        String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ?";
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+        return count != null ? count : 0;
+    }
+
+    public long countActiveByRequesterId(Long requesterId) {
+        String sql = """
+            SELECT COUNT(*)
+            FROM requests r
+            JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.requester_id = ? AND s.is_final = FALSE
+        """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+        return count != null ? count : 0;
+    }
+
+    public long countPendingByRequesterId(Long requesterId) {
+        String sql = """
+            SELECT COUNT(*)
+            FROM requests r
+            JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.requester_id = ? AND s.name = ?
+        """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId, Status.PENDING.getDisplayName());
+        return count != null ? count : 0;
+    }
+
+    public long countResolvedByRequesterId(Long requesterId) {
+        String sql = """
+            SELECT COUNT(*)
+            FROM requests r
+            JOIN statuses s ON r.current_status_id = s.id
+            WHERE r.requester_id = ? AND (s.name = ? OR s.name = ?)
+        """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId, Status.RESOLVED_SUCCESSFULLY.getDisplayName(), Status.RESOLVED_NEGATIVELY.getDisplayName());
+        return count != null ? count : 0;
+    }
 }
