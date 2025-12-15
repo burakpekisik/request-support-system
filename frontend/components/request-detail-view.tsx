@@ -441,22 +441,24 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => setIsCancelDialogOpen(true)}
-                  disabled={requestData.statusId === statusIdMap.cancelled}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Cancel Request
-              </Button>
-            </CardContent>
-          </Card>
+          {requestData.statusId < 4 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => setIsCancelDialogOpen(true)}
+                      disabled={isSubmitting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Cancel Request
+                  </Button>
+                </CardContent>
+              </Card>
+          )}
         </div>
       </div>
       <ConfirmationDialog
