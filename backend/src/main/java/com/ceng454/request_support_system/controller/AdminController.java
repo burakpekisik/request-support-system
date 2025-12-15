@@ -85,4 +85,19 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/dashboard/stats/total-resolved-requests-this-month")
+    public ResponseEntity<?> getTotalResolvedRequestsThisMonth(Authentication authentication) {
+        try {
+            // Authentication object'inden userId al (JwtAuthenticationFilter set ediyor)
+            Long adminId = Long.parseLong(authentication.getName());
+            int totalResolvedRequestsThisMonth = adminService.getTotalResolvedRequestMonth();
+
+            return ResponseEntity.ok(   Map.of(
+                "totalResolvedRequestsThisMonth", totalResolvedRequestsThisMonth
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

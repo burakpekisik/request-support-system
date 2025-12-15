@@ -13,6 +13,9 @@ export default function AdminDashboard() {
   const [totalUserChange, setTotalUserChange] = useState({label: '', percentage: 0, isPositive: true});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalRequests, setTotalRequest] = useState<number | string>();
+  const [totalRequestChange, setTotalRequestChange] = useState({label: '', percentage: 0, isPositive: true});
+  const [totalResolvedRequests, setTotalResolvedRequestChange] = useState<number | string>();
 
   useEffect(() => {
     adminService
@@ -37,6 +40,39 @@ export default function AdminDashboard() {
         console.error(err);
       })
       .finally(() => setLoading(false));
+    adminService
+      .getAdminStatsTotalRequest()
+      .then((count) => {
+        setTotalRequest(count);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user count");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+    adminService
+      .getAdminStatsTotalRequestChangePercentage()
+      .then((response) => {
+        setTotalRequestChange(response);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user count");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+    adminService
+      .getAdminStatsTotalResolvedRequest()
+      .then((count) => {
+        setTotalResolvedRequestChange(count);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user count");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
 
   }, []);
   return (
@@ -50,8 +86,8 @@ export default function AdminDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard title="Total Users" value={totalUsers} icon={Users} trend={{ value: totalUserChange.percentage, isPositive: totalUserChange.isPositive }} />
-        <StatsCard title="Total Requests" value={3842} icon={FileText} trend={{ value: 8, isPositive: true }} />
-        <StatsCard title="Resolved This Month" value={892} icon={CheckCircle} trend={{ value: 15, isPositive: true }} />
+        <StatsCard title="Total Requests" value={totalRequests} icon={FileText} trend={{ value: totalRequestChange.percentage, isPositive: totalRequestChange.isPositive }} />
+        <StatsCard title="Resolved This Month" value={totalResolvedRequests} icon={CheckCircle} trend={{ value: 15, isPositive: true }} />
         <StatsCard title="Pending Requests" value={156} icon={Clock} />
       </div>
 

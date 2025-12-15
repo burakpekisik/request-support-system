@@ -34,10 +34,12 @@ public class AdminService {
 
         return statsDto;
     }
+    
     @Transactional
     public int getTotalRequest() {
         return adminDashboardRepository.countTotalRequests();
     }
+
     @Transactional
     public UserChangeStatsDto getMonthlyRequestChange() {
         Double percentageChange = adminDashboardRepository.calculateTotalRequestChangePercentageByMonth();
@@ -54,5 +56,12 @@ public class AdminService {
 
         return statsDto;
     }
+// --- SENARYO: BU AY TOPLAM ÇÖZÜMLENEN TALEP SAYISINI GETİRME ---
+    @Transactional
+    public int getTotalResolvedRequestMonth() {
+        return adminDashboardRepository.countResolvedRequestsThisMonth();
+    }
+
+
 
 }
