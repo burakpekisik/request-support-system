@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Eye } from "lucide-react"
 import { commonService } from "@/lib/api/common"
 import type { RequestSummary, RequestFilters } from "@/lib/api/types"
-import { statusMapping, getRelativeTime } from "@/lib/constants"
+import { statusMapping, getRelativeTime, statusIdMap } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { LoadingState } from "@/components/loading-state"
 
@@ -105,7 +105,7 @@ export function RequestsTable({ filters }: RequestsTableProps) {
           </TableHeader>
           <TableBody>
             {requests.map((request) => {
-              const status = statusMapping[request.status] || "pending"
+              const status = statusIdMap[request.statusId] || "pending"
               
               return (
                 <TableRow key={request.id}>
