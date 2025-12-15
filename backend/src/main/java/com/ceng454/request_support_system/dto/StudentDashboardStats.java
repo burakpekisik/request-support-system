@@ -13,4 +13,7 @@ public class StudentDashboardStats {
     private long resolvedRequests;
     private long totalRequests;
     private double resolvedRequestsPercentage;
+    private int totalRequestsTrend;
+    private int activeRequestsTrend;
+    private int resolvedRequestsTrend;
 }

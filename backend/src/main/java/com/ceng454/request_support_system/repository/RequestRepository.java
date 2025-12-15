@@ -646,44 +646,98 @@ public class RequestRepository {
         jdbcTemplate.update(sql, newStatusId, requestId);
     }
 
-    // ========== Student Dashboard Methods ==========
-
-    public long countTotalByRequesterId(Long requesterId) {
-        String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ?";
-        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
-        return count != null ? count : 0;
+        // ========== Student Dashboard Methods ========== 
+    
+        public List<RequestSummary> findRecentByRequesterId(Long requesterId, int limit) {
+            String sql = """
+                SELECT
+                    r.id,
+                    r.title,
+                    r.description,
+                    CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                    u.email as requester_email,
+                    c.name as category,
+                    p.name as priority,
+                    s.name as status,
+                    un.name as unit_name,
+                    r.created_at,
+                    r.updated_at
+                FROM requests r
+                INNER JOIN users u ON r.requester_id = u.id
+                INNER JOIN categories c ON r.category_id = c.id
+                INNER JOIN priorities p ON r.priority_id = p.id
+                INNER JOIN statuses s ON r.current_status_id = s.id
+                INNER JOIN units un ON r.unit_id = un.id
+                WHERE r.requester_id = ?
+                ORDER BY r.created_at DESC
+                LIMIT ?
+            """;
+            return jdbcTemplate.query(sql, requestSummaryRowMapper, requesterId, limit);
+        }
+    
+        public long countTotalByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ?";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public long countActiveByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3)";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public long countPendingByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id = 3";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public long countResolvedByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5)";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public int calculateTotalRequestsTrendByRequester(Long requesterId) {
+            String sql = """
+                SELECT
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+            """;
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                int thisWeek = rs.getInt("this_week");
+                int lastWeek = rs.getInt("last_week");
+                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
+                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            }, requesterId, requesterId);
+        }
+    
+        public int calculateActiveRequestsTrendByRequester(Long requesterId) {
+            String sql = """
+                SELECT
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+            """;
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                int thisWeek = rs.getInt("this_week");
+                int lastWeek = rs.getInt("last_week");
+                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
+                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            }, requesterId, requesterId);
+        }
+    
+        public int calculateResolvedRequestsTrendByRequester(Long requesterId) {
+            String sql = """
+                SELECT
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND updated_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+            """;
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                int thisWeek = rs.getInt("this_week");
+                int lastWeek = rs.getInt("last_week");
+                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
+                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            }, requesterId, requesterId);
+        }
     }
-
-    public long countActiveByRequesterId(Long requesterId) {
-        String sql = """
-            SELECT COUNT(*)
-            FROM requests r
-            JOIN statuses s ON r.current_status_id = s.id
-            WHERE r.requester_id = ? AND s.is_final = FALSE
-        """;
-        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
-        return count != null ? count : 0;
-    }
-
-    public long countPendingByRequesterId(Long requesterId) {
-        String sql = """
-            SELECT COUNT(*)
-            FROM requests r
-            JOIN statuses s ON r.current_status_id = s.id
-            WHERE r.requester_id = ? AND s.name = ?
-        """;
-        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId, Status.PENDING.getDisplayName());
-        return count != null ? count : 0;
-    }
-
-    public long countResolvedByRequesterId(Long requesterId) {
-        String sql = """
-            SELECT COUNT(*)
-            FROM requests r
-            JOIN statuses s ON r.current_status_id = s.id
-            WHERE r.requester_id = ? AND (s.name = ? OR s.name = ?)
-        """;
-        Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId, Status.RESOLVED_SUCCESSFULLY.getDisplayName(), Status.RESOLVED_NEGATIVELY.getDisplayName());
-        return count != null ? count : 0;
-    }
-}

@@ -1,51 +1,34 @@
 import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { RequestSummary } from "@/lib/api/types"
+import { StatusType } from "@/lib/constants"
 
-const recentRequests = [
-  {
-    id: "1234",
-    title: "Library Access Card Not Working",
-    category: "IT Support",
-    unit: "Information Technology",
-    status: "in_progress" as const,
-    date: "2024-12-05",
-  },
-  {
-    id: "1233",
-    title: "Transcript Request",
-    category: "Academic Affairs",
-    unit: "Student Affairs",
-    status: "pending" as const,
-    date: "2024-12-04",
-  },
-  {
-    id: "1232",
-    title: "Dormitory Maintenance Issue",
-    category: "Facilities",
-    unit: "Housing Services",
-    status: "resolved" as const,
-    date: "2024-12-03",
-  },
-  {
-    id: "1231",
-    title: "Course Registration Help",
-    category: "Academic Affairs",
-    unit: "Registrar",
-    status: "resolved" as const,
-    date: "2024-12-02",
-  },
-  {
-    id: "1230",
-    title: "WiFi Connection Problem",
-    category: "IT Support",
-    unit: "Information Technology",
-    status: "cancelled" as const,
-    date: "2024-12-01",
-  },
-]
+interface RecentRequestsTableProps {
+  requests: RequestSummary[];
+  isLoading: boolean;
+}
 
-export function RecentRequestsTable() {
+export function RecentRequestsTable({ requests, isLoading }: RecentRequestsTableProps) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {[...Array(5)].map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (requests.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-4">
+        No recent requests found.
+      </div>
+    )
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -59,7 +42,7 @@ export function RecentRequestsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {recentRequests.map((request) => (
+        {requests.map((request) => (
           <TableRow key={request.id}>
             <TableCell className="font-medium">
               <Link href={`/requests/${request.id}`} className="text-primary hover:underline">
@@ -72,11 +55,13 @@ export function RecentRequestsTable() {
               </Link>
             </TableCell>
             <TableCell className="hidden md:table-cell text-muted-foreground">{request.category}</TableCell>
-            <TableCell className="hidden lg:table-cell text-muted-foreground">{request.unit}</TableCell>
+            <TableCell className="hidden lg:table-cell text-muted-foreground">{request.unitName}</TableCell>
             <TableCell>
-              <StatusBadge status={request.status} />
+              <StatusBadge status={request.status.toLowerCase().replace(" ", "_") as StatusType} />
             </TableCell>
-            <TableCell className="hidden sm:table-cell text-muted-foreground">{request.date}</TableCell>
+            <TableCell className="hidden sm:table-cell text-muted-foreground">
+              {new Date(request.createdAt).toLocaleDateString()}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

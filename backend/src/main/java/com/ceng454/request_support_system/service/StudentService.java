@@ -1,9 +1,12 @@
 package com.ceng454.request_support_system.service;
 
+import com.ceng454.request_support_system.dto.RequestSummary;
 import com.ceng454.request_support_system.dto.StudentDashboardStats;
 import com.ceng454.request_support_system.repository.RequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,12 +25,23 @@ public class StudentService {
             resolvedPercentage = ((double) resolvedRequests / totalRequests) * 100;
         }
 
+        int totalRequestsTrend = requestRepository.calculateTotalRequestsTrendByRequester(studentId);
+        int activeRequestsTrend = requestRepository.calculateActiveRequestsTrendByRequester(studentId);
+        int resolvedRequestsTrend = requestRepository.calculateResolvedRequestsTrendByRequester(studentId);
+
         return new StudentDashboardStats(
                 activeRequests,
                 pendingReview,
                 resolvedRequests,
                 totalRequests,
-                resolvedPercentage
+                resolvedPercentage,
+                totalRequestsTrend,
+                activeRequestsTrend,
+                resolvedRequestsTrend
         );
+    }
+
+    public List<RequestSummary> getRecentRequests(Long studentId, int limit) {
+        return requestRepository.findRecentByRequesterId(studentId, limit);
     }
 }

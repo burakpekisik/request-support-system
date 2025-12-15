@@ -65,6 +65,18 @@ export interface OfficerDashboardStats {
   resolvedTodayTrend: number;
 }
 
+// Student Dashboard Types
+export interface StudentDashboardStats {
+  activeRequests: number;
+  pendingReview: number;
+  resolvedRequests: number;
+  totalRequests: number;
+  resolvedRequestsPercentage: number;
+  totalRequestsTrend: number;
+  activeRequestsTrend: number;
+  resolvedRequestsTrend: number;
+}
+
 export interface OfficerAssignmentStats {
   totalAssigned: number;
   pendingAction: number;
