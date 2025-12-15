@@ -36,8 +36,10 @@ import {
   AlertCircle,
   X,
   FileText,
-  File
+  File,
+  Trash2
 } from "lucide-react"
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 interface RequestDetailViewProps {
   requestId: string
@@ -52,6 +54,7 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   // Use constants for allowed extensions (remove leading dot for validation)
   const allowedExtensions = ATTACHMENT_VALID_EXTENSIONS.map(ext => ext.replace('.', ''))
@@ -157,6 +160,28 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
       setError('Failed to submit reply. Please try again.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleCancelRequest = async () => {
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      const result = await commonService.cancelRequest(requestId)
+      // Update request status locally
+      setRequestData(prevData => {
+        if (!prevData) return null
+        return { ...prevData, statusId: result.newStatusId }
+      })
+      // Refresh timeline to show cancellation event
+      const updatedTimeline = await commonService.getTimeline(requestId)
+      setTimeline(updatedTimeline)
+    } catch (err) {
+      console.error('Failed to cancel request:', err)
+      setError('Failed to cancel the request. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+      setIsCancelDialogOpen(false)
     }
   }
 
@@ -416,8 +441,34 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setIsCancelDialogOpen(true)}
+                  disabled={requestData.statusId === statusIdMap.cancelled}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Cancel Request
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
+      <ConfirmationDialog
+          open={isCancelDialogOpen}
+          onOpenChange={setIsCancelDialogOpen}
+          onConfirm={handleCancelRequest}
+          title="Are you sure you want to cancel this request?"
+          description="This action cannot be undone. This will permanently cancel your request."
+          confirmLabel="Yes, cancel request"
+          isLoading={isSubmitting}
+          variant="destructive"
+      />
     </div>
   )
 }

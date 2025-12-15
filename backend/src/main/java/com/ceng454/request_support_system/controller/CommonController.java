@@ -578,4 +578,55 @@ public class CommonController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    /**
+     * Cancel a request (only by the user who created it)
+     * POST /api/requests/{id}/cancel
+     */
+    @PostMapping("/requests/{id}/cancel")
+    public ResponseEntity<?> cancelRequest(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        try {
+            Long currentUserId = Long.parseLong(authentication.getName());
+
+            // Check if request exists
+            Map<String, Object> requestData = requestRepository.findById(id);
+            if (requestData == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Check if current user is the requester
+            Long requesterId = ((Number) requestData.get("requester_id")).longValue();
+            if (!requesterId.equals(currentUserId)) {
+                return ResponseEntity.status(403).body(Map.of(
+                        "error", "You are not authorized to cancel this request"
+                ));
+            }
+
+            // Get current status
+            Integer currentStatusId = requestRepository.getCurrentStatusId(id);
+            Integer newStatusId = Status.CANCELLED.getId(); // Status 4
+
+            // Update request status
+            requestRepository.updateStatus(id, newStatusId);
+
+            // Create timeline entry
+            RequestTimeline timeline = new RequestTimeline();
+            timeline.setRequestId(id);
+            timeline.setActorId(currentUserId);
+            timeline.setPreviousStatusId(currentStatusId);
+            timeline.setNewStatusId(newStatusId);
+            timeline.setComment("Talep iptal edildi");
+            timelineRepository.save(timeline);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Request cancelled successfully",
+                    "newStatusId", newStatusId
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

@@ -136,6 +136,17 @@ class CommonService {
     );
     return response;
   }
+
+  /**
+   * Cancel a request
+   */
+  async cancelRequest(requestId: number | string): Promise<{ message: string; newStatusId: number }> {
+    const response = await apiClient.post<{ message: string; newStatusId: number }>(
+        `/requests/${requestId}/cancel`,
+        {}
+    );
+    return response;
+  }
 }
 
 export const commonService = new CommonService();
