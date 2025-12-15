@@ -23,8 +23,10 @@ public class RequestRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    private final RowMapper<RequestSummary> requestSummaryRowMapper = (rs, rowNum) -> 
-        RequestSummary.builder()
+    private final RowMapper<RequestSummary> requestSummaryRowMapper = (rs, rowNum) -> {
+        Long assignedOfficerId = rs.getObject("assigned_officer_id") != null 
+            ? rs.getLong("assigned_officer_id") : null;
+        return RequestSummary.builder()
             .id(rs.getLong("id"))
             .title(rs.getString("title"))
             .description(rs.getString("description"))
@@ -33,10 +35,13 @@ public class RequestRepository {
             .category(rs.getString("category"))
             .priority(rs.getString("priority"))
             .status(rs.getString("status"))
+            .statusId(rs.getInt("status_id"))
             .unitName(rs.getString("unit_name"))
+            .assignedOfficerId(assignedOfficerId)
             .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
             .updatedAt(rs.getTimestamp("updated_at").toLocalDateTime())
             .build();
+    };
 
     // Talep Oluşturma (Auto-increment ID'yi geri döner)
     public Long save(Request request) {
@@ -121,7 +126,9 @@ public class RequestRepository {
                 c.name as category,
                 p.name as priority,
                 s.name as status,
+                r.current_status_id as status_id,
                 un.name as unit_name,
+                r.assigned_officer_id,
                 r.created_at,
                 r.updated_at
             FROM requests r
@@ -155,7 +162,9 @@ public class RequestRepository {
                 c.name as category,
                 p.name as priority,
                 s.name as status,
+                r.current_status_id as status_id,
                 un.name as unit_name,
+                r.assigned_officer_id,
                 r.created_at,
                 r.updated_at
             FROM requests r
@@ -242,7 +251,7 @@ public class RequestRepository {
     }
 
     /**
-     * Geçen haftaya göre yeni talep trendi
+     * Geçen aya göre yeni talep trendi
      */
     public int calculateNewRequestsTrend(Long officerId) {
         String sql = """
@@ -250,24 +259,25 @@ public class RequestRepository {
                 (SELECT COUNT(*) FROM requests r
                  INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
                  WHERE oua.user_id = ? 
-                   AND DATE(r.created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                   AND YEAR(r.created_at) = YEAR(CURDATE())
+                   AND MONTH(r.created_at) = MONTH(CURDATE())) as this_month,
                 (SELECT COUNT(*) FROM requests r
                  INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
                  WHERE oua.user_id = ? 
-                   AND DATE(r.created_at) >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-                   AND DATE(r.created_at) < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+                   AND YEAR(r.created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
+                   AND MONTH(r.created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))) as last_month
         """;
         
         return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-            int thisWeek = rs.getInt("this_week");
-            int lastWeek = rs.getInt("last_week");
-            if (lastWeek == 0) return 0;
-            return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            int thisMonth = rs.getInt("this_month");
+            int lastMonth = rs.getInt("last_month");
+            if (lastMonth == 0) return 0;
+            return (int) (((double) (thisMonth - lastMonth) / lastMonth) * 100);
         }, officerId, officerId);
     }
 
     /**
-     * Bugün çözülen taleplerin trendi
+     * Geçen aya göre çözülen taleplerin trendi
      */
     public int calculateResolvedTodayTrend(Long officerId) {
         String sql = """
@@ -276,19 +286,21 @@ public class RequestRepository {
                  INNER JOIN statuses s ON r.current_status_id = s.id
                  WHERE r.assigned_officer_id = ? 
                    AND s.name = 'Çözüldü'
-                   AND DATE(r.updated_at) = CURDATE()) as today,
+                   AND YEAR(r.updated_at) = YEAR(CURDATE())
+                   AND MONTH(r.updated_at) = MONTH(CURDATE())) as this_month,
                 (SELECT COUNT(*) FROM requests r
                  INNER JOIN statuses s ON r.current_status_id = s.id
                  WHERE r.assigned_officer_id = ? 
                    AND s.name = 'Çözüldü'
-                   AND DATE(r.updated_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) as yesterday
+                   AND YEAR(r.updated_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
+                   AND MONTH(r.updated_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))) as last_month
         """;
         
         return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-            int today = rs.getInt("today");
-            int yesterday = rs.getInt("yesterday");
-            if (yesterday == 0) return 0;
-            return (int) (((double) (today - yesterday) / yesterday) * 100);
+            int thisMonth = rs.getInt("this_month");
+            int lastMonth = rs.getInt("last_month");
+            if (lastMonth == 0) return 0;
+            return (int) (((double) (thisMonth - lastMonth) / lastMonth) * 100);
         }, officerId, officerId);
     }
 
@@ -315,7 +327,9 @@ public class RequestRepository {
                 c.name as category,
                 p.name as priority,
                 s.name as status,
+                r.current_status_id as status_id,
                 un.name as unit_name,
+                r.assigned_officer_id,
                 r.created_at,
                 r.updated_at
             FROM requests r
@@ -442,7 +456,9 @@ public class RequestRepository {
                 c.name as category,
                 p.name as priority,
                 s.name as status,
+                r.current_status_id as status_id,
                 un.name as unit_name,
+                r.assigned_officer_id,
                 r.created_at,
                 r.updated_at
             FROM requests r
@@ -519,7 +535,9 @@ public class RequestRepository {
                 c.name as category,
                 p.name as priority,
                 s.name as status,
+                r.current_status_id as status_id,
                 un.name as unit_name,
+                r.assigned_officer_id,
                 r.created_at,
                 r.updated_at
             FROM requests r
@@ -645,4 +663,99 @@ public class RequestRepository {
         String sql = "UPDATE requests SET current_status_id = ?, updated_at = NOW() WHERE id = ?";
         jdbcTemplate.update(sql, newStatusId, requestId);
     }
-}
+
+        // ========== Student Dashboard Methods ========== 
+    
+        public List<RequestSummary> findRecentByRequesterId(Long requesterId, int limit) {
+            String sql = """
+                SELECT
+                    r.id,
+                    r.title,
+                    r.description,
+                    CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                    u.email as requester_email,
+                    c.name as category,
+                    p.name as priority,
+                    s.name as status,
+                    un.name as unit_name,
+                    r.created_at,
+                    r.updated_at
+                FROM requests r
+                INNER JOIN users u ON r.requester_id = u.id
+                INNER JOIN categories c ON r.category_id = c.id
+                INNER JOIN priorities p ON r.priority_id = p.id
+                INNER JOIN statuses s ON r.current_status_id = s.id
+                INNER JOIN units un ON r.unit_id = un.id
+                WHERE r.requester_id = ?
+                ORDER BY r.created_at DESC
+                LIMIT ?
+            """;
+            return jdbcTemplate.query(sql, requestSummaryRowMapper, requesterId, limit);
+        }
+    
+        public long countTotalByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ?";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public long countActiveByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3)";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public long countPendingByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id = 3";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public long countResolvedByRequesterId(Long requesterId) {
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5)";
+            Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
+            return count != null ? count : 0;
+        }
+    
+        public int calculateTotalRequestsTrendByRequester(Long requesterId) {
+            String sql = """
+                SELECT
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+            """;
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                int thisWeek = rs.getInt("this_week");
+                int lastWeek = rs.getInt("last_week");
+                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
+                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            }, requesterId, requesterId);
+        }
+    
+        public int calculateActiveRequestsTrendByRequester(Long requesterId) {
+            String sql = """
+                SELECT
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+            """;
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                int thisWeek = rs.getInt("this_week");
+                int lastWeek = rs.getInt("last_week");
+                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
+                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            }, requesterId, requesterId);
+        }
+    
+        public int calculateResolvedRequestsTrendByRequester(Long requesterId) {
+            String sql = """
+                SELECT
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND updated_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+            """;
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                int thisWeek = rs.getInt("this_week");
+                int lastWeek = rs.getInt("last_week");
+                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
+                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+            }, requesterId, requesterId);
+        }
+    }

@@ -85,6 +85,7 @@ public class AuthService {
                 .firstName(savedUser.getFirstName())
                 .lastName(savedUser.getLastName())
                 .phoneNumber(savedUser.getPhoneNumber())
+                .avatarUrl(savedUser.getAvatarUrl())
                 .role("STUDENT")
                 .message("Kayıt başarılı")
                 .build();
@@ -126,6 +127,7 @@ public class AuthService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(user.getAvatarUrl())
                 .role(primaryRole)
                 .message("Giriş başarılı")
                 .build();

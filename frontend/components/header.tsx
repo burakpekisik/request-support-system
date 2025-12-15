@@ -52,39 +52,6 @@ export function Header({ profileHref = "/profile" }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground">
-                3
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <div className="px-4 py-3 border-b border-border">
-              <p className="font-medium">Notifications</p>
-            </div>
-            <div className="py-2">
-              <DropdownMenuItem className="flex flex-col items-start gap-1 px-4 py-3">
-                <p className="text-sm font-medium">Request #1234 Updated</p>
-                <p className="text-xs text-muted-foreground">Your request has been assigned to IT Support</p>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 px-4 py-3">
-                <p className="text-sm font-medium">New Reply</p>
-                <p className="text-xs text-muted-foreground">Officer replied to your request #1233</p>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 px-4 py-3">
-                <p className="text-sm font-medium">Request Resolved</p>
-                <p className="text-xs text-muted-foreground">Request #1230 has been marked as resolved</p>
-              </DropdownMenuItem>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-primary">View all notifications</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

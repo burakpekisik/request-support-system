@@ -3,7 +3,9 @@ package com.ceng454.request_support_system.service;
 import com.ceng454.request_support_system.dto.OfficerAssignmentStats;
 import com.ceng454.request_support_system.dto.OfficerDashboardStats;
 import com.ceng454.request_support_system.dto.RequestSummary;
+import com.ceng454.request_support_system.dto.UnitOfficerDto;
 import com.ceng454.request_support_system.repository.RequestRepository;
+import com.ceng454.request_support_system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,9 @@ public class OfficerService {
 
     @Autowired
     private RequestRepository requestRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      * Officer dashboard istatistiklerini getir
@@ -131,5 +136,12 @@ public class OfficerService {
      */
     public List<Map<String, Object>> getAllUnits() {
         return requestRepository.findAllUnits();
+    }
+
+    /**
+     * Aynı unit'teki officer'ları getir (kendisi hariç)
+     */
+    public List<UnitOfficerDto> getOfficersInSameUnits(Long officerId) {
+        return userRepository.findOfficersInSameUnits(officerId);
     }
 }

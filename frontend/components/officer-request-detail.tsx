@@ -28,7 +28,8 @@ import {
   getInitials,
   formatDate,
   formatFileSize,
-  getPriorityColorClass
+  getPriorityColorClass,
+  isFinalStatus
 } from "@/lib/constants"
 import type { RequestDetail, TimelineEntry } from "@/lib/api/types"
 import {
@@ -89,13 +90,21 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
     currentUserId != null && 
     requestData.assignedOfficerId === currentUserId
 
+  // Check if request is assigned to another officer (not me)
+  const isAssignedToOther = requestData?.assignedOfficerId != null && 
+    currentUserId != null && 
+    requestData.assignedOfficerId !== currentUserId
+
+  // Check if request status is final (resolved or cancelled)
+  const isFinal = requestData?.statusId != null && isFinalStatus(requestData.statusId)
+
   // Check if current user is the requester (created the request)
   const isRequester = requestData?.requesterId != null &&
     currentUserId != null &&
     requestData.requesterId === currentUserId
 
-  // Can write response if assigned OR if requester
-  const canWriteResponse = isAssignedToMe || isRequester
+  // Can write response if assigned OR if requester AND status is not final
+  const canWriteResponse = (isAssignedToMe || isRequester) && !isFinal
 
   // Can update status only if assigned officer (not requester)
   const canUpdateStatus = isAssignedToMe && !isRequester
@@ -321,8 +330,8 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
         </div>
       </div>
 
-      {/* Action Buttons - Only show if not requester */}
-      {!isRequester && (
+      {/* Action Buttons - Only show if not requester, not assigned to another officer, and status is not final */}
+      {!isRequester && !isAssignedToOther && !isFinal && (
         <Card>
           <CardContent className="py-4">
             <div className="flex flex-wrap items-center gap-3">

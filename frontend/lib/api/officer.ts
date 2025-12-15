@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { OfficerDashboardStats, OfficerAssignmentStats, RequestSummary } from './types';
+import type { OfficerDashboardStats, OfficerAssignmentStats, RequestSummary, UnitOfficer } from './types';
 
 class OfficerService {
   /**
@@ -83,6 +83,14 @@ class OfficerService {
     queryParams.append('size', String(params.size || 20));
 
     const response = await apiClient.get<RequestSummary[]>(`/officer/assignments?${queryParams.toString()}`);
+    return response;
+  }
+
+  /**
+   * Get officers in the same unit(s)
+   */
+  async getUnitOfficers(): Promise<UnitOfficer[]> {
+    const response = await apiClient.get<UnitOfficer[]>('/officer/unit-officers');
     return response;
   }
 }

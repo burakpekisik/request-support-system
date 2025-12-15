@@ -114,6 +114,28 @@ class CommonService {
     );
     return response;
   }
+
+  /**
+   * Mark a request as resolved
+   */
+  async markAsResolved(requestId: number | string): Promise<{ message: string; newStatusId: number }> {
+    const response = await apiClient.post<{ message: string; newStatusId: number }>(
+      `/requests/${requestId}/mark-as-resolved`,
+      {}
+    );
+    return response;
+  }
+
+  /**
+   * Transfer a request to another officer in the same unit
+   */
+  async transferToOfficer(requestId: number | string, targetOfficerId: number): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      `/requests/${requestId}/transfer`,
+      { targetOfficerId }
+    );
+    return response;
+  }
 }
 
 export const commonService = new CommonService();

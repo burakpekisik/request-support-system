@@ -20,7 +20,9 @@ public class RequestSummary {
     private String category;
     private String priority;
     private String status;
+    private Integer statusId;
     private String unitName;
+    private Long assignedOfficerId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -1,5 +1,6 @@
 package com.ceng454.request_support_system.repository;
 
+import com.ceng454.request_support_system.dto.UnitOfficerDto;
 import com.ceng454.request_support_system.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -116,6 +117,40 @@ public class UserRepository {
         String sql = "SELECT unit_id FROM officer_unit_assignments WHERE user_id = ?";
         
         return jdbcTemplate.queryForList(sql, Integer.class, officerId);
+    }
+
+    /**
+     * Get all officers in the same units as the given officer (excluding the officer themselves)
+     */
+    public List<UnitOfficerDto> findOfficersInSameUnits(Long officerId) {
+        String sql = """
+            SELECT DISTINCT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.avatar_url,
+                r.name as role_name
+            FROM users u
+            INNER JOIN officer_unit_assignments oua ON u.id = oua.user_id
+            INNER JOIN user_roles ur ON u.id = ur.user_id
+            INNER JOIN roles r ON ur.role_id = r.id
+            WHERE oua.unit_id IN (
+                SELECT unit_id FROM officer_unit_assignments WHERE user_id = ?
+            )
+            AND u.id != ?
+            AND u.is_active = TRUE
+            ORDER BY u.first_name, u.last_name
+        """;
+        
+        return jdbcTemplate.query(sql, (rs, rowNum) -> UnitOfficerDto.builder()
+                .id(rs.getLong("id"))
+                .firstName(rs.getString("first_name"))
+                .lastName(rs.getString("last_name"))
+                .email(rs.getString("email"))
+                .avatarUrl(rs.getString("avatar_url"))
+                .roleName(rs.getString("role_name"))
+                .build(), officerId, officerId);
     }
 
     // Kullanıcı profilini güncelle (UPDATE)

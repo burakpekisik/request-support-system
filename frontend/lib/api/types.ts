@@ -22,6 +22,7 @@ export interface AuthResponse {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  avatarUrl?: string;
   role: string;
   message: string;
 }
@@ -65,6 +66,18 @@ export interface OfficerDashboardStats {
   resolvedTodayTrend: number;
 }
 
+// Student Dashboard Types
+export interface StudentDashboardStats {
+  activeRequests: number;
+  pendingReview: number;
+  resolvedRequests: number;
+  totalRequests: number;
+  resolvedRequestsPercentage: number;
+  totalRequestsTrend: number;
+  activeRequestsTrend: number;
+  resolvedRequestsTrend: number;
+}
+
 export interface OfficerAssignmentStats {
   totalAssigned: number;
   pendingAction: number;
@@ -80,7 +93,9 @@ export interface RequestSummary {
   category: string;
   priority: string;
   status: string;
+  statusId: number;
   unitName: string;
+  assignedOfficerId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -105,6 +120,16 @@ export interface Unit {
   id: number;
   name: string;
   description: string;
+}
+
+// Unit Officer Types
+export interface UnitOfficer {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatarUrl: string | null;
+  roleName: string;
 }
 
 // Create Request Types

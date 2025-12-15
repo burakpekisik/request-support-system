@@ -23,21 +23,22 @@ export const statusMapping: Record<string, StatusType> = {
 export const statusIdMap: Record<number, StatusType> = {
   1: "pending",        // Beklemede
   2: "in_progress",    // İşlemde
-  3: "waiting_response", // Cevap Bekliyor
-  4: "resolved_successfully", // Olumlu Çözüldü
-  5: "resolved_negatively",   // Olumsuz Çözüldü
-  6: "cancelled",      // İptal Edildi
+  3: "answered", // Cevaplandı
+  5: "cancelled",      // İptal Edildi
+  6: "waiting_response", // Yanıt Bekleniyor
+  7: "resolved_successfully", // Olumlu Çözüldü
+  8: "resolved_negatively",   // Olumsuz Çözüldü
 };
 
 // Reverse mapping (from UI key to database ID)
 export const statusIdReverseMap: Record<StatusType, number> = {
   "pending": 1,
   "in_progress": 2,
-  "answered": 3, // alias for waiting_response
-  "waiting_response": 3,
-  "resolved_successfully": 4,
-  "resolved_negatively": 5,
-  "cancelled": 6,
+  "answered": 3,
+  "cancelled": 5,
+  "waiting_response": 6,
+  "resolved_successfully": 7,
+  "resolved_negatively": 8,
 };
 
 // Status options with labels and colors (for dropdowns/selects)
@@ -151,4 +152,16 @@ export function formatTimestamp(dateString: string): string {
 // Check if role is student type
 export function isStudentRole(role: string): boolean {
   return role.toLowerCase() === 'student' || role.toLowerCase() === 'öğrenci';
+}
+
+// Check if request status is final (resolved or cancelled)
+// Uses statusIdMap for maintainability
+export function isFinalStatus(statusId: number): boolean {
+  const finalStatuses: StatusType[] = [
+    "cancelled",
+    "resolved_successfully",
+    "resolved_negatively",
+  ];
+  const status = statusIdMap[statusId];
+  return finalStatuses.includes(status);
 }

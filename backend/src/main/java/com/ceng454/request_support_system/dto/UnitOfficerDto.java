@@ -9,16 +9,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthResponse {
-    private String token;
-    private String type = "Bearer";
-    private Long userId;
-    private String tcNumber;
-    private String email;
+public class UnitOfficerDto {
+    private Long id;
     private String firstName;
     private String lastName;
-    private String phoneNumber;
+    private String email;
     private String avatarUrl;
-    private String role;
-    private String message;
+    private String roleName;
 }

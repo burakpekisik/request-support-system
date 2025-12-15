@@ -6,10 +6,12 @@ import com.ceng454.request_support_system.dto.RequestDetailDto;
 import com.ceng454.request_support_system.dto.RequestSummary;
 import com.ceng454.request_support_system.dto.TimelineEntryDto;
 import com.ceng454.request_support_system.dto.UpdateProfileDto;
+import com.ceng454.request_support_system.enums.Status;
 import com.ceng454.request_support_system.model.Attachment;
 import com.ceng454.request_support_system.model.RequestTimeline;
 import com.ceng454.request_support_system.repository.RequestRepository;
 import com.ceng454.request_support_system.repository.TimelineRepository;
+import com.ceng454.request_support_system.repository.UserRepository;
 import com.ceng454.request_support_system.service.AttachmentService;
 import com.ceng454.request_support_system.service.OfficerService;
 import com.ceng454.request_support_system.service.ProfileService;
@@ -56,6 +58,9 @@ public class CommonController {
 
     @Autowired
     private TimelineRepository timelineRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Value("${app.upload.attachment.dir}")
     private String uploadDir;
@@ -383,6 +388,140 @@ public class CommonController {
             return ResponseEntity.ok(Map.of(
                 "message", "Successfully took ownership of the request",
                 "newStatusId", newStatusId
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Mark a request as resolved
+     * POST /api/requests/{id}/mark-as-resolved
+     */
+    @PostMapping("/requests/{id}/mark-as-resolved")
+    public ResponseEntity<?> markAsResolved(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        try {
+            Long officerId = Long.parseLong(authentication.getName());
+            
+            // Check if request exists
+            Map<String, Object> requestData = requestRepository.findById(id);
+            if (requestData == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Check if current user is the assigned officer
+            Object assignedOfficerIdObj = requestData.get("assigned_officer_id");
+            if (assignedOfficerIdObj == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "This request is not assigned to any officer. Please take ownership first."
+                ));
+            }
+            
+            Long assignedOfficerId = ((Number) assignedOfficerIdObj).longValue();
+            if (!assignedOfficerId.equals(officerId)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "You are not the assigned officer for this request"
+                ));
+            }
+            
+            // Get current status
+            Integer currentStatusId = requestRepository.getCurrentStatusId(id);
+            
+            // Check if already resolved or cancelled using Status enum
+            if (currentStatusId != null) {
+                int resolvedSuccessId = Status.RESOLVED_SUCCESSFULLY.getId();
+                int resolvedNegId = Status.RESOLVED_NEGATIVELY.getId();
+                int cancelledId = Status.CANCELLED.getId();
+                if (currentStatusId == resolvedSuccessId || currentStatusId == resolvedNegId || currentStatusId == cancelledId) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "This request is already resolved or cancelled"
+                    ));
+                }
+            }
+            
+            // Set status to resolved successfully using Status enum
+            Integer newStatusId = Status.RESOLVED_SUCCESSFULLY.getId();
+            
+            // Update request status
+            requestRepository.updateStatus(id, newStatusId);
+            
+            // Create timeline entry
+            RequestTimeline timeline = new RequestTimeline();
+            timeline.setRequestId(id);
+            timeline.setActorId(officerId);
+            timeline.setPreviousStatusId(currentStatusId);
+            timeline.setNewStatusId(newStatusId);
+            timeline.setComment("Marked request as resolved");
+            timelineRepository.save(timeline);
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Request marked as resolved successfully",
+                "newStatusId", newStatusId
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Transfer a request to another officer in the same unit
+     * POST /api/requests/{id}/transfer
+     */
+    @PostMapping("/requests/{id}/transfer")
+    public ResponseEntity<?> transferToOfficer(
+            @PathVariable Long id,
+            @RequestBody Map<String, Long> body,
+            Authentication authentication
+    ) {
+        try {
+            Long currentOfficerId = Long.parseLong(authentication.getName());
+            Long targetOfficerId = body.get("targetOfficerId");
+            
+            if (targetOfficerId == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Target officer ID is required"
+                ));
+            }
+            
+            // Check if request exists
+            Map<String, Object> requestData = requestRepository.findById(id);
+            if (requestData == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Verify target officer exists and is in the same unit
+            List<Integer> currentOfficerUnits = userRepository.findUnitIdsByOfficerId(currentOfficerId);
+            List<Integer> targetOfficerUnits = userRepository.findUnitIdsByOfficerId(targetOfficerId);
+            
+            boolean hasCommonUnit = currentOfficerUnits.stream()
+                    .anyMatch(targetOfficerUnits::contains);
+            
+            if (!hasCommonUnit) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Target officer is not in the same unit"
+                ));
+            }
+            
+            // Get current status
+            Integer currentStatusId = requestRepository.getCurrentStatusId(id);
+            
+            // Update request assignment
+            requestRepository.updateStatusAndAssignment(id, currentStatusId, targetOfficerId);
+            
+            // Create timeline entry
+            RequestTimeline timeline = new RequestTimeline();
+            timeline.setRequestId(id);
+            timeline.setActorId(currentOfficerId);
+            timeline.setPreviousStatusId(currentStatusId);
+            timeline.setNewStatusId(currentStatusId);
+            timeline.setComment("Transferred request to another officer");
+            timelineRepository.save(timeline);
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "Request transferred successfully"
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
