@@ -3,6 +3,7 @@ package com.ceng454.request_support_system.controller;
 import com.ceng454.request_support_system.dto.OfficerAssignmentStats;
 import com.ceng454.request_support_system.dto.OfficerDashboardStats;
 import com.ceng454.request_support_system.dto.RequestSummary;
+import com.ceng454.request_support_system.dto.UnitOfficerDto;
 import com.ceng454.request_support_system.service.OfficerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -142,6 +143,22 @@ public class OfficerController {
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Get officers in the same unit(s) as the current officer
+     * GET /api/officer/unit-officers
+     */
+    @GetMapping("/unit-officers")
+    public ResponseEntity<?> getUnitOfficers(Authentication authentication) {
+        try {
+            Long officerId = Long.parseLong(authentication.getName());
+            
+            List<UnitOfficerDto> officers = officerService.getOfficersInSameUnits(officerId);
+            return ResponseEntity.ok(officers);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

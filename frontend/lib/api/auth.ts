@@ -80,6 +80,7 @@ class AuthService {
       tcNumber: response.tcNumber,
       phoneNumber: response.phoneNumber,
       role: response.role,
+      avatarUrl: response.avatarUrl,
     });
   }
 
