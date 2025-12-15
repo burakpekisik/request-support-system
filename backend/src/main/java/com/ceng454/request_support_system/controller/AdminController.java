@@ -100,4 +100,44 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/dashboard/stats/monthly-resolved-request-change")
+    public ResponseEntity<UserChangeStatsDto> getTotalResolvedRequestsChangeByMonth(Authentication authentication) {
+        try {
+            // Authentication object'inden userId al (JwtAuthenticationFilter set ediyor)
+            Long adminId = Long.parseLong(authentication.getName());
+            UserChangeStatsDto adminMonthlyResolvedRequestChange = adminService.getMonthlyResolvedRequestChange();
+
+            return ResponseEntity.ok(adminMonthlyResolvedRequestChange);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/dashboard/stats/pending-requests")
+    public ResponseEntity<?> getRequestPending(Authentication authentication) {
+        try {
+            // Authentication object'inden userId al (JwtAuthenticationFilter set ediyor)
+            Long adminId = Long.parseLong(authentication.getName());
+            int totalPendingRequest = adminService.getTotalPendingRequest();
+            return ResponseEntity.ok(   Map.of(
+                "totalPendingRequest", totalPendingRequest
+            ));
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    @GetMapping("/dashboard/stats/requests-by-unit")
+    public ResponseEntity<?> getRequestsByUnit(Authentication authentication) {
+        try {
+            // Authentication object'inden userId al (JwtAuthenticationFilter set ediyor)
+            Long adminId = Long.parseLong(authentication.getName());
+            return ResponseEntity.ok(adminService.getRequestsByUnit());
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

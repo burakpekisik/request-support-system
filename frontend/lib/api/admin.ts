@@ -27,9 +27,23 @@ class AdminService {
 
   async getAdminStatsTotalResolvedRequest(): Promise<number> {
     const response = await apiClient.get<{totalResolvedRequestsThisMonth : number}>('/admin/dashboard/stats/total-resolved-requests-this-month'); 
-    console.log("Resolved Requests This Month:", response.totalResolvedRequestsThisMonth);
     return response.totalResolvedRequestsThisMonth;
-  }  
+  }
+  
+  async getAdminStatsTotalResolvedRequestChangePercentage(): Promise<AdminUserChangeStats> {
+    const response = await apiClient.get<AdminUserChangeStats>('/admin/dashboard/stats/monthly-resolved-request-change');
+    return response;
+  }
+
+  async getAdminStatsTotalPendingRequest(): Promise<number> {
+    const response = await apiClient.get<{totalPendingRequest : number}>('/admin/dashboard/stats/pending-requests'); 
+    return response.totalPendingRequest;
+  }
+
+  async getRequestsByUnit(): Promise<{ unitName: string; requestCount: number }[]> {
+    const response = await apiClient.get<{ unitName: string; requestCount: number }[]>('/admin/dashboard/stats/requests-by-unit');
+    return response;
+  }
   
 }
 

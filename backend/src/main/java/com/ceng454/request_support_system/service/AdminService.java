@@ -1,8 +1,12 @@
 package com.ceng454.request_support_system.service;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ceng454.request_support_system.dto.RequestsByUnitProjection;
 import com.ceng454.request_support_system.dto.UserChangeStatsDto;
 import com.ceng454.request_support_system.repository.AdminDashboardRepository;
 
@@ -62,6 +66,40 @@ public class AdminService {
         return adminDashboardRepository.countResolvedRequestsThisMonth();
     }
 
+    @Transactional
+    public UserChangeStatsDto getMonthlyResolvedRequestChange() {
+        Double percentageChange = adminDashboardRepository.calculateResolvedRequestChangePercentageByMonth();
+
+        UserChangeStatsDto statsDto = new UserChangeStatsDto();
+        statsDto.setPercentage(percentageChange != null ? percentageChange : 0.0);
+        statsDto.setLabel("Monthly Request Change");
+        if (percentageChange == null || percentageChange == 0.0 || percentageChange > 0) {
+            statsDto.setIsPositive(true);
+        } 
+        else {
+            statsDto.setIsPositive(false);
+        }
+
+        return statsDto;
+    }
+
+    @Transactional
+    public int getTotalPendingRequest() {
+        return adminDashboardRepository.countPendingRequests();
+    }
+
+    @Transactional
+    public List<RequestsByUnitProjection> getRequestsByUnit() {
+    List<Map<String, Object>> rows =
+            adminDashboardRepository.getRequestsByUnit();
+
+    return rows.stream().map(row -> {
+        RequestsByUnitProjection dto = new RequestsByUnitProjection();
+        dto.setUnitName((String) row.get("unit_name"));
+        dto.setRequestCount(((Number) row.get("request_count")).intValue());
+        return dto;
+    }).toList();
+}
 
 
 }

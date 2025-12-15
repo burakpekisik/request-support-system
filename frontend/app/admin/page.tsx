@@ -15,7 +15,10 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [totalRequests, setTotalRequest] = useState<number | string>();
   const [totalRequestChange, setTotalRequestChange] = useState({label: '', percentage: 0, isPositive: true});
-  const [totalResolvedRequests, setTotalResolvedRequestChange] = useState<number | string>();
+  const [totalResolvedRequests, setTotalResolvedRequestChange] = useState<number | string>(); 
+  const [totalResolvedRequestsChange, setTotalResolvedRequestChangePercentage] = useState({label: '', percentage: 0, isPositive: true});
+  const [totalPendingRequests, setTotalPendingRequest] = useState<number | string>();
+  const [requestsByUnit, setRequestsByUnit] = useState<{ unitName: string; requestCount: number }[]>([]); 
 
   useEffect(() => {
     adminService
@@ -73,6 +76,40 @@ export default function AdminDashboard() {
         console.error(err);
       })
       .finally(() => setLoading(false));
+      adminService
+      .getAdminStatsTotalResolvedRequestChangePercentage()
+      .then((response) => {
+        setTotalResolvedRequestChangePercentage(response);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user count");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+      adminService
+      .getAdminStatsTotalPendingRequest()
+      .then((count) => {
+        setTotalPendingRequest(count);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch user count");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+    
+    adminService
+      .getRequestsByUnit()
+      .then((data) => {
+        setRequestsByUnit(data);
+        setError(null);
+      })
+      .catch((err) => {
+        setError("Failed to fetch requests by unit");
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
 
   }, []);
   return (
@@ -87,8 +124,8 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard title="Total Users" value={totalUsers} icon={Users} trend={{ value: totalUserChange.percentage, isPositive: totalUserChange.isPositive }} />
         <StatsCard title="Total Requests" value={totalRequests} icon={FileText} trend={{ value: totalRequestChange.percentage, isPositive: totalRequestChange.isPositive }} />
-        <StatsCard title="Resolved This Month" value={totalResolvedRequests} icon={CheckCircle} trend={{ value: 15, isPositive: true }} />
-        <StatsCard title="Pending Requests" value={156} icon={Clock} />
+        <StatsCard title="Resolved This Month" value={totalResolvedRequests} icon={CheckCircle} trend={{ value: totalResolvedRequestsChange.percentage, isPositive: totalResolvedRequestsChange.isPositive }} />
+        <StatsCard title="Pending Requests" value={totalPendingRequests} icon={Clock} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -101,23 +138,23 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { unit: "Information Technology", count: 234, percentage: 35 },
-                { unit: "Student Affairs", count: 156, percentage: 23 },
-                { unit: "Finance Department", count: 98, percentage: 15 },
-                { unit: "Housing Services", count: 87, percentage: 13 },
-                { unit: "Facilities", count: 67, percentage: 10 },
-              ].map((item) => (
-                <div key={item.unit} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{item.unit}</span>
-                    <span className="text-muted-foreground">{item.count} requests</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${item.percentage}%` }} />
-                  </div>
-                </div>
-              ))}
+              {requestsByUnit.length > 0 && (() => {
+                const totalRequests = requestsByUnit.reduce((sum, item) => sum + item.requestCount, 0);
+                return requestsByUnit.map((item) => {
+                  const percentage = totalRequests > 0 ? (item.requestCount / totalRequests) * 100 : 0;
+                  return (
+                    <div key={item.unitName} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{item.unitName}</span>
+                        <span className="text-muted-foreground">{item.requestCount} requests</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </CardContent>
         </Card>
