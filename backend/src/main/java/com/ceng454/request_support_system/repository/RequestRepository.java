@@ -677,7 +677,9 @@ public class RequestRepository {
                     c.name as category,
                     p.name as priority,
                     s.name as status,
+                    r.current_status_id as status_id,
                     un.name as unit_name,
+                    r.assigned_officer_id,
                     r.created_at,
                     r.updated_at
                 FROM requests r
