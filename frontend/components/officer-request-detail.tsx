@@ -390,10 +390,12 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
                   Take Ownership
                 </Button>
               )}
-              <Button variant="outline" onClick={() => setIsTransferOpen(true)}>
-                <ArrowRightLeft className="w-4 h-4 mr-2" />
-                Transfer
-              </Button>
+              {isAssignedToMe && (
+                <Button variant="outline" onClick={() => setIsTransferOpen(true)}>
+                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                  Transfer
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

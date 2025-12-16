@@ -107,7 +107,7 @@ export default function OfficerRequestsPage() {
         </Select>
       </div>
 
-      <RequestsTable filters={filters} />
+      <RequestsTable filters={filters} basePath="/officer/requests" />
     </div>
   )
 }

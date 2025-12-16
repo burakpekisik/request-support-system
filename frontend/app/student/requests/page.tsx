@@ -107,7 +107,7 @@ export default function StudentRequestsPage() {
         </Select>
       </div>
 
-      <RequestsTable filters={filters} />
+      <RequestsTable filters={filters} basePath="/student/requests" />
     </div>
   )
 }

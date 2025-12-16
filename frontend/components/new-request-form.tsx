@@ -115,8 +115,19 @@ export function NewRequestForm({ userRole = "officer" }: NewRequestFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
+
+    // Validate required dropdown fields
+    if (!formData.categoryId) {
+      setError("Please select a category.")
+      return
+    }
+    if (!formData.unitId) {
+      setError("Please select a unit.")
+      return
+    }
+
+    setIsLoading(true)
 
     try {
       await commonService.createRequest({
@@ -210,7 +221,7 @@ export function NewRequestForm({ userRole = "officer" }: NewRequestFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">Description *</Label>
         <Textarea
           id="description"
           placeholder="Please describe your issue or request in detail..."

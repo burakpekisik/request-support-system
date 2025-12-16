@@ -16,9 +16,10 @@ import { LoadingState } from "@/components/loading-state"
 
 interface RequestsTableProps {
   filters: RequestFilters;
+  basePath?: string; // e.g., "/officer/requests" or "/student/requests"
 }
 
-export function RequestsTable({ filters }: RequestsTableProps) {
+export function RequestsTable({ filters, basePath = "/requests" }: RequestsTableProps) {
   const [requests, setRequests] = useState<RequestSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -110,12 +111,12 @@ export function RequestsTable({ filters }: RequestsTableProps) {
               return (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/requests/${request.id}`} className="text-primary hover:underline">
+                    <Link href={`${basePath}/${request.id}`} className="text-primary hover:underline">
                       #{request.id}
                     </Link>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">
-                    <Link href={`/requests/${request.id}`} className="hover:text-primary">
+                    <Link href={`${basePath}/${request.id}`} className="hover:text-primary">
                       {request.title}
                     </Link>
                   </TableCell>
@@ -138,7 +139,7 @@ export function RequestsTable({ filters }: RequestsTableProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/requests/${request.id}`}>
+                      <Link href={`${basePath}/${request.id}`}>
                         <Eye className="w-4 h-4 mr-1" />
                         View
                       </Link>
