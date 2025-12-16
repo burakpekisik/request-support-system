@@ -61,6 +61,7 @@ import {
   Download,
   Image,
   Flag,
+  Trash2,
 } from "lucide-react"
 
 interface OfficerRequestDetailProps {
@@ -93,6 +94,7 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
   const [isTakingOwnership, setIsTakingOwnership] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Check if current user is the assigned officer
@@ -198,6 +200,32 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  // Handle cancel request
+  const handleCancelRequest = async () => {
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      const result = await commonService.cancelRequest(requestId)
+      // Update request status locally
+      setRequestData(prevData => {
+        if (!prevData) return null
+        return { ...prevData, statusId: result.newStatusId }
+      })
+      // Update selected status
+      const statusKey = statusIdMap[result.newStatusId] || "cancelled"
+      setSelectedStatus(statusKey)
+      // Refresh timeline to show cancellation event
+      const updatedTimeline = await commonService.getTimeline(requestId)
+      setTimeline(updatedTimeline)
+    } catch (err) {
+      console.error('Failed to cancel request:', err)
+      setError('Failed to cancel the request. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+      setIsCancelDialogOpen(false)
     }
   }
 
@@ -712,6 +740,26 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
             </CardContent>
           </Card>
 
+          {/* Cancel Request Action - only for requester and non-final status */}
+          {isRequester && requestData.statusId < 4 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setIsCancelDialogOpen(true)}
+                  disabled={isSubmitting}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Cancel Request
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </div>
 
@@ -727,6 +775,18 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
         confirmLabel="Take Ownership"
         onConfirm={handleTakeOwnership}
         isLoading={isTakingOwnership}
+      />
+
+      {/* Cancel Request Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isCancelDialogOpen}
+        onOpenChange={setIsCancelDialogOpen}
+        onConfirm={handleCancelRequest}
+        title="Are you sure you want to cancel this request?"
+        description="This action cannot be undone. This will permanently cancel your request."
+        confirmLabel="Yes, cancel request"
+        isLoading={isSubmitting}
+        variant="destructive"
       />
     </div>
   )
