@@ -24,6 +24,7 @@ export interface AuthResponse {
   phoneNumber: string;
   avatarUrl?: string;
   role: string;
+  unitName?: string;
   message: string;
 }
 
@@ -49,6 +50,7 @@ export interface UserData {
   phoneNumber: string;
   role: string;
   avatarUrl?: string;
+  unitName?: string;
 }
 
 export interface TokenCheckResponse {
@@ -90,6 +92,7 @@ export interface RequestSummary {
   description: string;
   requesterName: string;
   requesterEmail: string;
+  requesterAvatarUrl?: string;
   category: string;
   priority: string;
   status: string;
@@ -173,6 +176,16 @@ export interface RequestDetail {
   requesterAvatarUrl?: string;
   assignedOfficerId?: number;
   assignedOfficerName?: string;
+  attachments?: RequestAttachment[];
+}
+
+// Request Attachment Type (for original request files)
+export interface RequestAttachment {
+  id: number;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSizeMb?: number;
 }
 
 // Timeline Entry Types

@@ -17,6 +17,7 @@ public class RequestSummary {
     private String description;
     private String requesterName;
     private String requesterEmail;
+    private String requesterAvatarUrl;
     private String category;
     private String priority;
     private String status;

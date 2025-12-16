@@ -78,4 +78,12 @@ public class AttachmentRepository {
         String sql = "SELECT * FROM attachments WHERE uploader_id = ? ORDER BY created_at DESC";
         return jdbcTemplate.query(sql, attachmentRowMapper, uploaderId);
     }
+
+    /**
+     * Find original request attachments (where timeline_id is null)
+     */
+    public List<Attachment> findOriginalAttachmentsByRequestId(Long requestId) {
+        String sql = "SELECT * FROM attachments WHERE request_id = ? AND timeline_id IS NULL ORDER BY created_at ASC";
+        return jdbcTemplate.query(sql, attachmentRowMapper, requestId);
+    }
 }

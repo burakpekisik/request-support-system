@@ -81,6 +81,7 @@ class AuthService {
       phoneNumber: response.phoneNumber,
       role: response.role,
       avatarUrl: response.avatarUrl,
+      unitName: response.unitName,
     });
   }
 

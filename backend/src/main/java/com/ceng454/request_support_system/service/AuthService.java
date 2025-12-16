@@ -119,6 +119,12 @@ public class AuthService {
             primaryRole
         );
 
+        // Get unit name for officers
+        String unitName = null;
+        if ("OFFICER".equals(primaryRole)) {
+            unitName = userRepository.findUnitNamesByOfficerId(user.getId());
+        }
+
         return AuthResponse.builder()
                 .token(token)
                 .userId(user.getId())
@@ -129,6 +135,7 @@ public class AuthService {
                 .phoneNumber(user.getPhoneNumber())
                 .avatarUrl(user.getAvatarUrl())
                 .role(primaryRole)
+                .unitName(unitName)
                 .message("Giriş başarılı")
                 .build();
     }

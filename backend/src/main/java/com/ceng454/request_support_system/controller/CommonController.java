@@ -1,11 +1,6 @@
 package com.ceng454.request_support_system.controller;
 
-import com.ceng454.request_support_system.dto.AddTimelineEntryDto;
-import com.ceng454.request_support_system.dto.CreateRequestDto;
-import com.ceng454.request_support_system.dto.RequestDetailDto;
-import com.ceng454.request_support_system.dto.RequestSummary;
-import com.ceng454.request_support_system.dto.TimelineEntryDto;
-import com.ceng454.request_support_system.dto.UpdateProfileDto;
+import com.ceng454.request_support_system.dto.*;
 import com.ceng454.request_support_system.enums.Status;
 import com.ceng454.request_support_system.model.Attachment;
 import com.ceng454.request_support_system.model.RequestTimeline;
@@ -259,6 +254,9 @@ public class CommonController {
                 return ResponseEntity.notFound().build();
             }
 
+            // Get original request attachments (where timeline_id is null)
+            List<AttachmentDto> originalAttachments = attachmentService.getOriginalAttachmentDtosByRequestId(id);
+
             RequestDetailDto dto = RequestDetailDto.builder()
                     .id(((Number) requestData.get("id")).longValue())
                     .title((String) requestData.get("title"))
@@ -282,6 +280,7 @@ public class CommonController {
                     .assignedOfficerId(requestData.get("assigned_officer_id") != null ? 
                             ((Number) requestData.get("assigned_officer_id")).longValue() : null)
                     .assignedOfficerName((String) requestData.get("assigned_officer_name"))
+                    .attachments(originalAttachments)
                     .build();
 
             return ResponseEntity.ok(dto);

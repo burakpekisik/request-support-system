@@ -32,6 +32,7 @@ public class RequestRepository {
             .description(rs.getString("description"))
             .requesterName(rs.getString("requester_name"))
             .requesterEmail(rs.getString("requester_email"))
+            .requesterAvatarUrl(rs.getString("requester_avatar_url"))
             .category(rs.getString("category"))
             .priority(rs.getString("priority"))
             .status(rs.getString("status"))
@@ -123,6 +124,7 @@ public class RequestRepository {
                 r.description,
                 CONCAT(u.first_name, ' ', u.last_name) as requester_name,
                 u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
                 c.name as category,
                 p.name as priority,
                 s.name as status,
@@ -159,6 +161,7 @@ public class RequestRepository {
                 r.description,
                 CONCAT(u.first_name, ' ', u.last_name) as requester_name,
                 u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
                 c.name as category,
                 p.name as priority,
                 s.name as status,
@@ -324,6 +327,7 @@ public class RequestRepository {
                 r.description,
                 CONCAT(u.first_name, ' ', u.last_name) as requester_name,
                 u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
                 c.name as category,
                 p.name as priority,
                 s.name as status,
@@ -453,6 +457,7 @@ public class RequestRepository {
                 r.description,
                 CONCAT(u.first_name, ' ', u.last_name) as requester_name,
                 u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
                 c.name as category,
                 p.name as priority,
                 s.name as status,
@@ -532,6 +537,7 @@ public class RequestRepository {
                 r.description,
                 CONCAT(u.first_name, ' ', u.last_name) as requester_name,
                 u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
                 c.name as category,
                 p.name as priority,
                 s.name as status,
@@ -674,6 +680,7 @@ public class RequestRepository {
                     r.description,
                     CONCAT(u.first_name, ' ', u.last_name) as requester_name,
                     u.email as requester_email,
+                    u.avatar_url as requester_avatar_url,
                     c.name as category,
                     p.name as priority,
                     s.name as status,

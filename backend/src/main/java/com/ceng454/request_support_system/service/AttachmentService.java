@@ -176,4 +176,20 @@ public class AttachmentService {
                         .build())
                 .toList();
     }
+
+    /**
+     * Get original request attachments as DTOs (where timeline_id is null)
+     */
+    public List<com.ceng454.request_support_system.dto.AttachmentDto> getOriginalAttachmentDtosByRequestId(Long requestId) {
+        List<Attachment> attachments = attachmentRepository.findOriginalAttachmentsByRequestId(requestId);
+        return attachments.stream()
+                .map(a -> com.ceng454.request_support_system.dto.AttachmentDto.builder()
+                        .id(a.getId())
+                        .fileName(a.getFileName())
+                        .filePath(a.getFilePath())
+                        .fileType(a.getFileType())
+                        .fileSizeMb(a.getFileSizeMb())
+                        .build())
+                .toList();
+    }
 }
