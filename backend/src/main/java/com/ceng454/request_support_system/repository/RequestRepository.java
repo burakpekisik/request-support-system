@@ -195,7 +195,7 @@ public class RequestRepository {
             INNER JOIN statuses s ON r.current_status_id = s.id
             INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
             WHERE oua.user_id = ?
-              AND s.name = 'Beklemede'
+              AND s.name = 'Pending'
               AND r.assigned_officer_id IS NULL
         """;
         
@@ -228,7 +228,7 @@ public class RequestRepository {
             FROM requests r
             INNER JOIN statuses s ON r.current_status_id = s.id
             WHERE r.assigned_officer_id = ?
-              AND s.name = 'Çözüldü'
+              AND s.name LIKE 'Resolved%'
               AND DATE(r.updated_at) = CURDATE()
         """;
         
@@ -288,13 +288,13 @@ public class RequestRepository {
                 (SELECT COUNT(*) FROM requests r
                  INNER JOIN statuses s ON r.current_status_id = s.id
                  WHERE r.assigned_officer_id = ? 
-                   AND s.name = 'Çözüldü'
+                   AND s.name LIKE 'Resolved%'
                    AND YEAR(r.updated_at) = YEAR(CURDATE())
                    AND MONTH(r.updated_at) = MONTH(CURDATE())) as this_month,
                 (SELECT COUNT(*) FROM requests r
                  INNER JOIN statuses s ON r.current_status_id = s.id
                  WHERE r.assigned_officer_id = ? 
-                   AND s.name = 'Çözüldü'
+                   AND s.name LIKE 'Resolved%'
                    AND YEAR(r.updated_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
                    AND MONTH(r.updated_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))) as last_month
         """;
