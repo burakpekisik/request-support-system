@@ -14,7 +14,7 @@ class CommonService {
     sortOrder?: string;
     page?: number;
     size?: number;
-  } = {}): Promise<RequestSummary[]> {
+  } = {}): Promise<{ data: RequestSummary[]; total: number; totalPages: number; currentPage: number }> {
     const queryParams = new URLSearchParams();
     
     queryParams.append('status', params.status || 'all');
@@ -23,9 +23,9 @@ class CommonService {
     queryParams.append('sortBy', params.sortBy || 'createdAt');
     queryParams.append('sortOrder', params.sortOrder || 'desc');
     queryParams.append('page', String(params.page || 0));
-    queryParams.append('size', String(params.size || 20));
+    queryParams.append('size', String(params.size || 10));
 
-    const response = await apiClient.get<RequestSummary[]>(`/my-requests?${queryParams.toString()}`);
+    const response = await apiClient.get<{ data: RequestSummary[]; total: number; totalPages: number; currentPage: number }>(`/my-requests?${queryParams.toString()}`);
     return response;
   }
 

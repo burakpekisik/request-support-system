@@ -37,7 +37,7 @@ class OfficerService {
     sortOrder?: string;
     page?: number;
     size?: number;
-  } = {}): Promise<RequestSummary[]> {
+  } = {}): Promise<{ data: RequestSummary[]; total: number; totalPages: number; currentPage: number }> {
     const queryParams = new URLSearchParams();
     
     queryParams.append('status', params.status || 'all');
@@ -46,9 +46,9 @@ class OfficerService {
     queryParams.append('sortBy', params.sortBy || 'createdAt');
     queryParams.append('sortOrder', params.sortOrder || 'desc');
     queryParams.append('page', String(params.page || 0));
-    queryParams.append('size', String(params.size || 20));
+    queryParams.append('size', String(params.size || 10));
 
-    const response = await apiClient.get<RequestSummary[]>(`/officer/inbox?${queryParams.toString()}`);
+    const response = await apiClient.get<{ data: RequestSummary[]; total: number; totalPages: number; currentPage: number }>(`/officer/inbox?${queryParams.toString()}`);
     return response;
   }
 
@@ -71,7 +71,7 @@ class OfficerService {
     sortOrder?: string;
     page?: number;
     size?: number;
-  } = {}): Promise<RequestSummary[]> {
+  } = {}): Promise<{ data: RequestSummary[]; total: number; totalPages: number; currentPage: number }> {
     const queryParams = new URLSearchParams();
     
     queryParams.append('status', params.status || 'all');
@@ -80,9 +80,9 @@ class OfficerService {
     queryParams.append('sortBy', params.sortBy || 'createdAt');
     queryParams.append('sortOrder', params.sortOrder || 'desc');
     queryParams.append('page', String(params.page || 0));
-    queryParams.append('size', String(params.size || 20));
+    queryParams.append('size', String(params.size || 10));
 
-    const response = await apiClient.get<RequestSummary[]>(`/officer/assignments?${queryParams.toString()}`);
+    const response = await apiClient.get<{ data: RequestSummary[]; total: number; totalPages: number; currentPage: number }>(`/officer/assignments?${queryParams.toString()}`);
     return response;
   }
 

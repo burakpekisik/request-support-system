@@ -310,7 +310,7 @@ public class RequestRepository {
     /**
      * Officer inbox'ındaki talepleri filtrele, sırala ve ara (pagination ile)
      */
-    public List<RequestSummary> findInboxRequestsWithFilters(
+    public Map<String, Object> findInboxRequestsWithFilters(
             Long officerId,
             String status,
             String priority,
@@ -320,22 +320,7 @@ public class RequestRepository {
             int page,
             int size
     ) {
-        StringBuilder sql = new StringBuilder("""
-            SELECT 
-                r.id,
-                r.title,
-                r.description,
-                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
-                u.email as requester_email,
-                u.avatar_url as requester_avatar_url,
-                c.name as category,
-                p.name as priority,
-                s.name as status,
-                r.current_status_id as status_id,
-                un.name as unit_name,
-                r.assigned_officer_id,
-                r.created_at,
-                r.updated_at
+        StringBuilder baseSql = new StringBuilder("""
             FROM requests r
             INNER JOIN users u ON r.requester_id = u.id
             INNER JOIN categories c ON r.category_id = c.id
@@ -352,23 +337,47 @@ public class RequestRepository {
         // Status filter - Enum-based approach
         Status statusEnum = Status.fromFilterValue(status);
         if (statusEnum != null) {
-            sql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
+            baseSql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
         }
 
         // Priority filter - Enum-based approach
         Priority priorityEnum = Priority.fromFilterValue(priority);
         if (priorityEnum != null) {
-            sql.append(" AND p.name = '").append(priorityEnum.getDisplayName()).append("'");
+            baseSql.append(" AND p.name = '").append(priorityEnum.getDisplayName()).append("'");
         }
 
         // Search filter
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)");
+            baseSql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)");
             String searchPattern = "%" + search.trim() + "%";
             params.add(searchPattern);
             params.add(searchPattern);
             params.add(searchPattern);
         }
+
+        // Count query
+        String countSql = "SELECT COUNT(*) " + baseSql;
+        Integer total = jdbcTemplate.queryForObject(countSql, Integer.class, params.toArray());
+
+        // Data query with sorting and pagination
+        StringBuilder dataSql = new StringBuilder("""
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                r.current_status_id as status_id,
+                un.name as unit_name,
+                r.assigned_officer_id,
+                r.created_at,
+                r.updated_at
+        """);
+        dataSql.append(baseSql);
 
         // Sorting
         String orderByClause = switch (sortBy) {
@@ -378,14 +387,23 @@ public class RequestRepository {
             case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
             default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
         };
-        sql.append(orderByClause);
+        dataSql.append(orderByClause);
 
         // Pagination
-        sql.append(" LIMIT ? OFFSET ?");
-        params.add(size);
-        params.add(page * size);
+        dataSql.append(" LIMIT ? OFFSET ?");
+        List<Object> dataParams = new java.util.ArrayList<>(params);
+        dataParams.add(size);
+        dataParams.add(page * size);
 
-        return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
+        List<RequestSummary> data = jdbcTemplate.query(dataSql.toString(), requestSummaryRowMapper, dataParams.toArray());
+        int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
+
+        return Map.of(
+            "data", data,
+            "total", total != null ? total : 0,
+            "totalPages", totalPages,
+            "currentPage", page
+        );
     }
 
     /**
@@ -440,7 +458,7 @@ public class RequestRepository {
     /**
      * Officer'a atanmış talepleri filtrele ve getir
      */
-    public List<RequestSummary> findAssignedRequests(
+    public Map<String, Object> findAssignedRequests(
             Long officerId,
             String status,
             String priority,
@@ -450,22 +468,7 @@ public class RequestRepository {
             int page,
             int size
     ) {
-        StringBuilder sql = new StringBuilder("""
-            SELECT 
-                r.id,
-                r.title,
-                r.description,
-                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
-                u.email as requester_email,
-                u.avatar_url as requester_avatar_url,
-                c.name as category,
-                p.name as priority,
-                s.name as status,
-                r.current_status_id as status_id,
-                un.name as unit_name,
-                r.assigned_officer_id,
-                r.created_at,
-                r.updated_at
+        StringBuilder baseSql = new StringBuilder("""
             FROM requests r
             INNER JOIN users u ON r.requester_id = u.id
             INNER JOIN categories c ON r.category_id = c.id
@@ -481,56 +484,30 @@ public class RequestRepository {
         // Status filter - Enum-based approach
         Status statusEnum = Status.fromFilterValue(status);
         if (statusEnum != null) {
-            sql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
+            baseSql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
         }
 
         // Priority filter - Enum-based approach
         Priority priorityEnum = Priority.fromFilterValue(priority);
         if (priorityEnum != null) {
-            sql.append(" AND p.name = '").append(priorityEnum.getDisplayName()).append("'");
+            baseSql.append(" AND p.name = '").append(priorityEnum.getDisplayName()).append("'");
         }
 
         // Search filter
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)");
+            baseSql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)");
             String searchPattern = "%" + search.trim() + "%";
             params.add(searchPattern);
             params.add(searchPattern);
             params.add(searchPattern);
         }
 
-        // Sorting
-        String orderByClause = switch (sortBy) {
-            case "priority" -> " ORDER BY p.level " + sortOrder.toUpperCase();
-            case "status" -> " ORDER BY s.name " + sortOrder.toUpperCase();
-            case "requester" -> " ORDER BY u.last_name " + sortOrder.toUpperCase();
-            case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
-            default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
-        };
-        sql.append(orderByClause);
+        // Count query
+        String countSql = "SELECT COUNT(*) " + baseSql;
+        Integer total = jdbcTemplate.queryForObject(countSql, Integer.class, params.toArray());
 
-        // Pagination
-        sql.append(" LIMIT ? OFFSET ?");
-        params.add(size);
-        params.add(page * size);
-
-        return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
-    }
-
-    /**
-     * Officer'ın kendi oluşturduğu talepleri filtrele ve getir
-     */
-    public List<RequestSummary> findMyRequests(
-            Long requesterId,
-            String status,
-            String category,
-            String search,
-            String sortBy,
-            String sortOrder,
-            int page,
-            int size
-    ) {
-        StringBuilder sql = new StringBuilder("""
+        // Data query with sorting and pagination
+        StringBuilder dataSql = new StringBuilder("""
             SELECT 
                 r.id,
                 r.title,
@@ -546,6 +523,50 @@ public class RequestRepository {
                 r.assigned_officer_id,
                 r.created_at,
                 r.updated_at
+        """);
+        dataSql.append(baseSql);
+
+        // Sorting
+        String orderByClause = switch (sortBy) {
+            case "priority" -> " ORDER BY p.level " + sortOrder.toUpperCase();
+            case "status" -> " ORDER BY s.name " + sortOrder.toUpperCase();
+            case "requester" -> " ORDER BY u.last_name " + sortOrder.toUpperCase();
+            case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
+            default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
+        };
+        dataSql.append(orderByClause);
+
+        // Pagination
+        dataSql.append(" LIMIT ? OFFSET ?");
+        List<Object> dataParams = new java.util.ArrayList<>(params);
+        dataParams.add(size);
+        dataParams.add(page * size);
+
+        List<RequestSummary> data = jdbcTemplate.query(dataSql.toString(), requestSummaryRowMapper, dataParams.toArray());
+        int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
+
+        return Map.of(
+            "data", data,
+            "total", total != null ? total : 0,
+            "totalPages", totalPages,
+            "currentPage", page
+        );
+    }
+
+    /**
+     * Officer'ın kendi oluşturduğu talepleri filtrele ve getir
+     */
+    public Map<String, Object> findMyRequests(
+            Long requesterId,
+            String status,
+            String category,
+            String search,
+            String sortBy,
+            String sortOrder,
+            int page,
+            int size
+    ) {
+        StringBuilder baseSql = new StringBuilder("""
             FROM requests r
             INNER JOIN users u ON r.requester_id = u.id
             INNER JOIN categories c ON r.category_id = c.id
@@ -561,23 +582,47 @@ public class RequestRepository {
         // Status filter - Enum-based approach
         Status statusEnum = Status.fromFilterValue(status);
         if (statusEnum != null) {
-            sql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
+            baseSql.append(" AND s.name = '").append(statusEnum.getDisplayName()).append("'");
         }
 
         // Category filter
         if (!"all".equalsIgnoreCase(category)) {
-            sql.append(" AND c.name LIKE ?");
+            baseSql.append(" AND c.name LIKE ?");
             params.add("%" + category + "%");
         }
 
         // Search filter
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR un.name LIKE ?)");
+            baseSql.append(" AND (r.title LIKE ? OR r.description LIKE ? OR un.name LIKE ?)");
             String searchPattern = "%" + search.trim() + "%";
             params.add(searchPattern);
             params.add(searchPattern);
             params.add(searchPattern);
         }
+
+        // Count query
+        String countSql = "SELECT COUNT(*) " + baseSql;
+        Integer total = jdbcTemplate.queryForObject(countSql, Integer.class, params.toArray());
+
+        // Data query with sorting and pagination
+        StringBuilder dataSql = new StringBuilder("""
+            SELECT 
+                r.id,
+                r.title,
+                r.description,
+                CONCAT(u.first_name, ' ', u.last_name) as requester_name,
+                u.email as requester_email,
+                u.avatar_url as requester_avatar_url,
+                c.name as category,
+                p.name as priority,
+                s.name as status,
+                r.current_status_id as status_id,
+                un.name as unit_name,
+                r.assigned_officer_id,
+                r.created_at,
+                r.updated_at
+        """);
+        dataSql.append(baseSql);
 
         // Sorting
         String orderByClause = switch (sortBy) {
@@ -587,14 +632,23 @@ public class RequestRepository {
             case "updatedAt" -> " ORDER BY r.updated_at " + sortOrder.toUpperCase();
             default -> " ORDER BY r.created_at " + sortOrder.toUpperCase();
         };
-        sql.append(orderByClause);
+        dataSql.append(orderByClause);
 
         // Pagination
-        sql.append(" LIMIT ? OFFSET ?");
-        params.add(size);
-        params.add(page * size);
+        dataSql.append(" LIMIT ? OFFSET ?");
+        List<Object> dataParams = new java.util.ArrayList<>(params);
+        dataParams.add(size);
+        dataParams.add(page * size);
 
-        return jdbcTemplate.query(sql.toString(), requestSummaryRowMapper, params.toArray());
+        List<RequestSummary> data = jdbcTemplate.query(dataSql.toString(), requestSummaryRowMapper, dataParams.toArray());
+        int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
+
+        return Map.of(
+            "data", data,
+            "total", total != null ? total : 0,
+            "totalPages", totalPages,
+            "currentPage", page
+        );
     }
 
     /**

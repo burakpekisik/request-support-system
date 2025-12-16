@@ -60,7 +60,7 @@ public class OfficerService {
     /**
      * Officer inbox'ındaki talepleri filtrele, sırala ve ara
      */
-    public List<RequestSummary> getInboxRequests(
+    public Map<String, Object> getInboxRequests(
             Long officerId, 
             String status, 
             String priority, 
@@ -91,7 +91,7 @@ public class OfficerService {
     /**
      * Officer'a atanmış talepleri filtrele ve getir
      */
-    public List<RequestSummary> getAssignedRequests(
+    public Map<String, Object> getAssignedRequests(
             Long officerId,
             String status,
             String priority,
@@ -109,7 +109,7 @@ public class OfficerService {
     /**
      * Officer'ın kendi oluşturduğu talepleri getir
      */
-    public List<RequestSummary> getMyRequests(
+    public Map<String, Object> getMyRequests(
             Long officerId,
             String status,
             String category,

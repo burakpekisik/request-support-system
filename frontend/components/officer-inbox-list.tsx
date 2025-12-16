@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { MoreHorizontal, UserPlus, CheckCircle, ArrowRightLeft, Eye } from "lucide-react"
+import { MoreHorizontal, UserPlus, CheckCircle, ArrowRightLeft, Eye, ChevronLeft, ChevronRight } from "lucide-react"
 import { officerService } from "@/lib/api/officer"
 import { commonService } from "@/lib/api/common"
 import { storage } from "@/lib/storage"
@@ -35,6 +35,12 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
+  const pageSize = 10
+  
   // Dialog states
   const [selectedRequest, setSelectedRequest] = useState<RequestSummary | null>(null)
   const [isTakeOwnershipOpen, setIsTakeOwnershipOpen] = useState(false)
@@ -51,25 +57,32 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
     }
   }, [])
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [filters.status, filters.priority, filters.search])
+
   useEffect(() => {
     loadInboxRequests()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.status, filters.priority, filters.search])
+  }, [filters.status, filters.priority, filters.search, currentPage])
 
   const loadInboxRequests = async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await officerService.getInboxRequests({
+      const result = await officerService.getInboxRequests({
         status: filters.status,
         priority: filters.priority,
         search: filters.search,
         sortBy: 'createdAt',
         sortOrder: 'desc',
-        page: 0,
-        size: 50
+        page: currentPage,
+        size: pageSize
       })
-      setRequests(data)
+      setRequests(result.data)
+      setTotal(result.total)
+      setTotalPages(result.totalPages)
     } catch (error) {
       console.error("Failed to load inbox requests:", error)
       setError(error instanceof Error ? error.message : 'Failed to load requests')
@@ -285,6 +298,55 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
           })}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, total)} of {total} requests
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => p - 1)}
+              disabled={currentPage === 0}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = currentPage < 3 ? i : currentPage - 2 + i;
+                if (pageNum >= totalPages) return null;
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-9"
+                  >
+                    {pageNum + 1}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => p + 1)}
+              disabled={currentPage >= totalPages - 1}
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Take Ownership Confirmation Dialog */}
       <ConfirmationDialog

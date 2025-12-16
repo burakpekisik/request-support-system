@@ -98,7 +98,7 @@ public class CommonController {
 
     /**
      * Get user's own submitted requests (shared endpoint for all users)
-     * GET /api/my-requests?status=all&category=all&search=&sortBy=createdAt&sortOrder=desc&page=0&size=20
+     * GET /api/my-requests?status=all&category=all&search=&sortBy=createdAt&sortOrder=desc&page=0&size=10
      */
     @GetMapping("/my-requests")
     public ResponseEntity<?> getMyRequests(
@@ -108,16 +108,16 @@ public class CommonController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "10") int size,
             Authentication authentication
     ) {
         try {
             Long userId = Long.parseLong(authentication.getName());
 
-            List<RequestSummary> requests = officerService.getMyRequests(
+            Map<String, Object> result = officerService.getMyRequests(
                 userId, status, category, search, sortBy, sortOrder, page, size
             );
-            return ResponseEntity.ok(requests);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

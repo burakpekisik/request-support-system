@@ -88,16 +88,17 @@ public class OfficerController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "10") int size,
             Authentication authentication
     ) {
         try {
             Long officerId = Long.parseLong(authentication.getName());
 
-            List<RequestSummary> requests = officerService.getInboxRequests(
+            Map<String, Object> result = officerService.getInboxRequests(
                 officerId, status, priority, search, sortBy, sortOrder, page, size
             );
-            return ResponseEntity.ok(requests);
+            
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -131,16 +132,17 @@ public class OfficerController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "10") int size,
             Authentication authentication
     ) {
         try {
             Long officerId = Long.parseLong(authentication.getName());
 
-            List<RequestSummary> requests = officerService.getAssignedRequests(
+            Map<String, Object> result = officerService.getAssignedRequests(
                 officerId, status, priority, search, sortBy, sortOrder, page, size
             );
-            return ResponseEntity.ok(requests);
+            
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
