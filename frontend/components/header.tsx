@@ -63,6 +63,9 @@ export function Header({ profileHref = "/profile" }: HeaderProps) {
               <div className="hidden md:flex flex-col items-start">
                 <span className="text-sm font-medium">{userName}</span>
                 <span className="text-xs text-muted-foreground">{userRole}</span>
+                {userData?.unitName && (
+                  <span className="text-xs text-muted-foreground">{userData.unitName}</span>
+                )}
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </Button>
@@ -71,6 +74,9 @@ export function Header({ profileHref = "/profile" }: HeaderProps) {
             <div className="px-4 py-3 border-b border-border">
               <p className="font-medium">{userName}</p>
               <p className="text-sm text-muted-foreground">{userRole}</p>
+              {userData?.unitName && (
+                <p className="text-xs text-muted-foreground">{userData.unitName}</p>
+              )}
             </div>
             <DropdownMenuItem asChild>
               <Link href={profileHref}>

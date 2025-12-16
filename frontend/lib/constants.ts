@@ -45,6 +45,7 @@ export const statusIdReverseMap: Record<StatusType, number> = {
 export const statusOptions: { value: StatusType; label: string; color: string }[] = [
   { value: "pending", label: "Pending", color: "text-yellow-600" },
   { value: "in_progress", label: "In Progress", color: "text-blue-600" },
+  { value: "answered", label: "Answered", color: "text-indigo-600" },
   { value: "waiting_response", label: "Waiting Response", color: "text-orange-600" },
   { value: "resolved_successfully", label: "Resolved Successfully", color: "text-green-600" },
   { value: "resolved_negatively", label: "Resolved Negatively", color: "text-red-600" },

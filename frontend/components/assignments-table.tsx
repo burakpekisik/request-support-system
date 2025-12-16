@@ -6,11 +6,11 @@ import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Eye, Clock } from "lucide-react"
 import { officerService } from "@/lib/api/officer"
 import type { RequestSummary, RequestFilters } from "@/lib/api/types"
-import { statusMapping, priorityColors, getInitials, getRelativeTime } from "@/lib/constants"
+import { statusMapping, priorityColors, getInitials, getRelativeTime, getFullStaticUrl } from "@/lib/constants"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { LoadingState } from "@/components/loading-state"
@@ -120,6 +120,9 @@ export function AssignmentsTable({ filters }: AssignmentsTableProps) {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
+                        {request.requesterAvatarUrl && (
+                          <AvatarImage src={getFullStaticUrl(request.requesterAvatarUrl) || undefined} />
+                        )}
                         <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
                           {getInitials(request.requesterName)}
                         </AvatarFallback>

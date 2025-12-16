@@ -21,6 +21,7 @@ import {
   getInitials,
   formatDate,
   formatFileSize,
+  formatFileSizeMb,
   getPriorityColorClass
 } from "@/lib/constants"
 import type { RequestDetail, TimelineEntry } from "@/lib/api/types"
@@ -37,7 +38,9 @@ import {
   X,
   FileText,
   File,
-  Trash2
+  Trash2,
+  Download,
+  Image
 } from "lucide-react"
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
@@ -296,6 +299,51 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
                     <span className="text-xs text-muted-foreground">{formatDate(requestData.createdAt)}</span>
                   </div>
                   <p className="text-foreground">{requestData.description}</p>
+                  
+                  {/* Original Request Attachments */}
+                  {requestData.attachments && requestData.attachments.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Paperclip className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Attachments ({requestData.attachments.length})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {requestData.attachments.map((attachment) => {
+                          const ext = attachment.fileName.split('.').pop()?.toLowerCase()
+                          const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')
+                          const isPdf = ext === 'pdf'
+                          const isDoc = ext === 'docx' || ext === 'doc'
+                          
+                          return (
+                            <a
+                              key={attachment.id}
+                              href={getFullStaticUrl(attachment.filePath) || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                            >
+                              {isImage ? (
+                                <Image className="w-4 h-4 text-blue-500" />
+                              ) : isPdf ? (
+                                <FileText className="w-4 h-4 text-red-500" />
+                              ) : isDoc ? (
+                                <FileText className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <File className="w-4 h-4 text-muted-foreground" />
+                              )}
+                              <span className="text-sm max-w-[150px] truncate">{attachment.fileName}</span>
+                              {attachment.fileSizeMb && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({formatFileSizeMb(attachment.fileSizeMb)})
+                                </span>
+                              )}
+                              <Download className="w-3 h-3 text-muted-foreground" />
+                            </a>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

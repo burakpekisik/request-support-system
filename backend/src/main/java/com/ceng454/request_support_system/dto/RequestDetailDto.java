@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.List;
  
 @Data
 @Builder
@@ -36,4 +37,7 @@ public class RequestDetailDto {
     // Assigned officer info
     private Long assignedOfficerId;
     private String assignedOfficerName;
+    
+    // Original request attachments
+    private List<AttachmentDto> attachments;
 }

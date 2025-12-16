@@ -120,6 +120,22 @@ public class UserRepository {
     }
 
     /**
+     * Get unit names for an officer (comma separated if multiple)
+     */
+    public String findUnitNamesByOfficerId(Long officerId) {
+        String sql = """
+            SELECT u.name 
+            FROM units u 
+            INNER JOIN officer_unit_assignments oua ON u.id = oua.unit_id 
+            WHERE oua.user_id = ?
+            ORDER BY u.name
+        """;
+        
+        List<String> unitNames = jdbcTemplate.queryForList(sql, String.class, officerId);
+        return unitNames.isEmpty() ? null : String.join(", ", unitNames);
+    }
+
+    /**
      * Get all officers in the same units as the given officer (excluding the officer themselves)
      */
     public List<UnitOfficerDto> findOfficersInSameUnits(Long officerId) {

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { StatusBadge } from "@/components/status-badge"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { TransferDialog } from "@/components/transfer-dialog"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,7 +22,7 @@ import { officerService } from "@/lib/api/officer"
 import { commonService } from "@/lib/api/common"
 import { storage } from "@/lib/storage"
 import type { RequestSummary, RequestFilters } from "@/lib/api/types"
-import { statusMapping, priorityColors, getInitials, getRelativeTime, isFinalStatus } from "@/lib/constants"
+import { statusMapping, priorityColors, getInitials, getRelativeTime, isFinalStatus, getFullStaticUrl } from "@/lib/constants"
 import { LoadingState } from "@/components/loading-state"
 
 interface OfficerInboxListProps {
@@ -189,6 +189,9 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
                 )}
               >
                 <Avatar className="h-10 w-10 mt-1">
+                  {item.requesterAvatarUrl && (
+                    <AvatarImage src={getFullStaticUrl(item.requesterAvatarUrl) || undefined} />
+                  )}
                   <AvatarFallback className="bg-secondary text-secondary-foreground">
                     {getInitials(item.requesterName)}
                   </AvatarFallback>
@@ -243,14 +246,17 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
                           {!isAssignedToOther && (
                             <>
                               {/* Show Assign to Me only if not already assigned to current user */}
-                              {!isAssignedToMe && (
+                              {!isAssignedToMe && !isFinalStatus(item.statusId) && (
                                 <DropdownMenuItem onClick={() => openTakeOwnershipDialog(item)}>
                                   <UserPlus className="w-4 h-4 mr-2" />
                                   Assign to Me
                                 </DropdownMenuItem>
                               )}
+
+                              {canMarkAsResolved || !isFinalStatus(item.statusId) &&  (
+                                <DropdownMenuSeparator />
+                              )}
                               
-                              <DropdownMenuSeparator />
                               
                               {/* Show Mark as Resolved only if assigned to me AND status is not final */}
                               {canMarkAsResolved && (
@@ -260,10 +266,13 @@ export function OfficerInboxList({ filters }: OfficerInboxListProps) {
                                 </DropdownMenuItem>
                               )}
                               
-                              <DropdownMenuItem onClick={() => openTransferDialog(item)}>
-                                <ArrowRightLeft className="w-4 h-4 mr-2" />
-                                Transfer
-                              </DropdownMenuItem>
+                              {/* Hide Transfer if status is final */}
+                              {!isFinalStatus(item.statusId) && (
+                                <DropdownMenuItem onClick={() => openTransferDialog(item)}>
+                                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                  Transfer
+                                </DropdownMenuItem>
+                              )}
                             </>
                           )}
                         </DropdownMenuContent>

@@ -20,5 +20,6 @@ public class AuthResponse {
     private String phoneNumber;
     private String avatarUrl;
     private String role;
+    private String unitName;
     private String message;
 }
