@@ -8,6 +8,7 @@ import com.ceng454.request_support_system.model.RequestTimeline;
 import com.ceng454.request_support_system.repository.RequestRepository;
 import com.ceng454.request_support_system.repository.TimelineRepository;
 import com.ceng454.request_support_system.repository.UserRepository;
+import com.ceng454.request_support_system.repository.UserRoleRepository;
 import com.ceng454.request_support_system.service.AttachmentService;
 import com.ceng454.request_support_system.service.OfficerService;
 import com.ceng454.request_support_system.service.ProfileService;
@@ -57,6 +58,9 @@ public class CommonController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     @Value("${app.upload.attachment.dir}")
     private String uploadDir;
@@ -641,7 +645,7 @@ public class CommonController {
             Authentication authentication
     ) {
         try {
-            Long officerId = Long.parseLong(authentication.getName());
+            Long userId = Long.parseLong(authentication.getName());
             Integer newPriorityId = body.get("priorityId");
 
             if (newPriorityId == null || newPriorityId < 1 || newPriorityId > 4) {
@@ -656,19 +660,24 @@ public class CommonController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Check if current user is the assigned officer
-            Object assignedOfficerIdObj = requestData.get("assigned_officer_id");
-            if (assignedOfficerIdObj == null) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "This request is not assigned to any officer. Please take ownership first."
-                ));
-            }
+            // Check if user is admin - admins can update priority without being assigned
+            boolean isAdmin = userRoleRepository.hasRole(userId, "admin");
 
-            Long assignedOfficerId = ((Number) assignedOfficerIdObj).longValue();
-            if (!assignedOfficerId.equals(officerId)) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "You are not the assigned officer for this request"
-                ));
+            if (!isAdmin) {
+                // For non-admins (officers), check if they are the assigned officer
+                Object assignedOfficerIdObj = requestData.get("assigned_officer_id");
+                if (assignedOfficerIdObj == null) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "This request is not assigned to any officer. Please take ownership first."
+                    ));
+                }
+
+                Long assignedOfficerId = ((Number) assignedOfficerIdObj).longValue();
+                if (!assignedOfficerId.equals(userId)) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "You are not the assigned officer for this request"
+                    ));
+                }
             }
 
             // Check if request is in a final status (resolved or cancelled)
@@ -693,7 +702,7 @@ public class CommonController {
             // Create timeline entry for priority change
             RequestTimeline timeline = new RequestTimeline();
             timeline.setRequestId(id);
-            timeline.setActorId(officerId);
+            timeline.setActorId(userId);
             timeline.setPreviousStatusId(currentStatusId);
             timeline.setNewStatusId(currentStatusId);
             String currentPriorityName = Priority.fromId(currentPriorityId).getDisplayName();

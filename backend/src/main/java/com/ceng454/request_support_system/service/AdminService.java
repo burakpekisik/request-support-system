@@ -148,6 +148,11 @@ public class AdminService {
         return adminDashboardRepository.getUserUnits(userId);
     }
 
+    @Transactional
+    public List<Map<String, Object>> getOfficersByUnit(Integer unitId) {
+        return adminDashboardRepository.getOfficersByUnit(unitId);
+    }
+
 }
 
 

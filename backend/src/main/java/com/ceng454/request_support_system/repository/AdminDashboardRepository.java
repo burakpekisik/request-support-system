@@ -237,14 +237,17 @@ public class AdminDashboardRepository {
         // Build data query
         StringBuilder dataSqlBuilder = new StringBuilder(
             "SELECT r.id, r.title, r.description, r.created_at, r.updated_at, " +
-            "s.name as status_name, s.color_code as status_color, " +
-            "u.name as unit_name, p.name as priority_name, p.color_code as priority_color, " +
-            "CONCAT(req.first_name, ' ', req.last_name) as requester_name, req.email as requester_email " +
+            "s.name as status_name, s.color_code as status_color, r.current_status_id as status_id, " +
+            "u.name as unit_name, p.name as priority_name, p.color_code as priority_color, r.priority_id, " +
+            "CONCAT(req.first_name, ' ', req.last_name) as requester_name, req.email as requester_email, " +
+            "r.assigned_officer_id, " +
+            "CASE WHEN ao.id IS NOT NULL THEN CONCAT(ao.first_name, ' ', ao.last_name) ELSE NULL END as assigned_officer_name " +
             "FROM requests r " +
             "JOIN statuses s ON r.current_status_id = s.id " +
             "JOIN units u ON r.unit_id = u.id " +
             "JOIN priorities p ON r.priority_id = p.id " +
-            "JOIN users req ON r.requester_id = req.id "
+            "JOIN users req ON r.requester_id = req.id " +
+            "LEFT JOIN users ao ON r.assigned_officer_id = ao.id "
         );
         
         List<Object> dataParams = new ArrayList<>(countParams);
@@ -484,5 +487,29 @@ public class AdminDashboardRepository {
         String sql = "SELECT id, name, description FROM units WHERE is_active = 1 ORDER BY name";
         
         return jdbcTemplate.queryForList(sql);
+    }
+
+    // Get officers by unit ID
+    public List<Map<String, Object>> getOfficersByUnit(Integer unitId) {
+        System.out.println("[AdminDashboardRepository] getOfficersByUnit called - unitId: " + unitId);
+        
+        String sql = """
+            SELECT DISTINCT 
+                u.id,
+                u.first_name AS firstName,
+                u.last_name AS lastName,
+                u.email,
+                u.avatar_url AS avatarUrl,
+                r.name as roleName
+            FROM users u
+            INNER JOIN officer_unit_assignments oua ON u.id = oua.user_id
+            INNER JOIN user_roles ur ON u.id = ur.user_id
+            INNER JOIN roles r ON ur.role_id = r.id
+            WHERE oua.unit_id = ?
+            AND u.is_active = TRUE
+            ORDER BY u.first_name, u.last_name
+        """;
+        
+        return jdbcTemplate.queryForList(sql, unitId);
     }
 }

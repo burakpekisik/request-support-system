@@ -1,14 +1,16 @@
 "use client"
 
-import { AdminRequestsTable } from "@/components/admin-requests-table"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Search, Building2, FileText, ChevronLeft, ChevronRight } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Search, Building2, FileText, ChevronLeft, ChevronRight, Eye, User } from "lucide-react"
 import { StatsCard } from "@/components/stats-card"
+import { StatusBadge } from "@/components/status-badge"
 import { useEffect, useState } from "react"
 import { adminService } from "@/lib/api/admin"
+import { statusIdMap, getRelativeTime } from "@/lib/constants"
 
 const mockUnits = [
   { name: "Information Technology", count: 45, pending: 12 },
@@ -190,43 +192,73 @@ export default function AdminRequestsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="px-6 py-3 text-left text-sm font-medium">Title</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium">Unit</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium">Requester</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium">Created</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Title</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium hidden md:table-cell">Unit</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium hidden lg:table-cell">Requester</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium hidden xl:table-cell">Assigned To</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium hidden sm:table-cell">Last Update</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-4 py-4 text-center text-muted-foreground">
                       Loading...
                     </td>
                   </tr>
                 ) : filteredRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-4 py-4 text-center text-muted-foreground">
                       No requests found
                     </td>
                   </tr>
                 ) : (
-                  filteredRequests.map((request) => (
-                    <tr key={request.id} className="border-b hover:bg-muted/50">
-                      <td className="px-6 py-4 text-sm">{request.title}</td>
-                      <td className="px-6 py-4 text-sm">{request.unit_name}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span 
-                          className="px-2 py-1 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: request.status_color || '#808080' }}
-                        >
-                          {request.status_name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">{request.requester_name}</td>
-                      <td className="px-6 py-4 text-sm">{new Date(request.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))
+                  filteredRequests.map((request) => {
+                    const statusKey = statusIdMap[request.status_id] || "pending"
+                    return (
+                      <tr key={request.id} className="border-b hover:bg-muted/50">
+                        <td className="px-4 py-4 text-sm font-mono">
+                          <Link href={`/admin/requests/${request.id}`} className="text-primary hover:underline">
+                            #{request.id}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-4 text-sm max-w-xs truncate">
+                          <Link href={`/admin/requests/${request.id}`} className="hover:text-primary">
+                            {request.title}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-4 text-sm hidden md:table-cell">
+                          <Badge variant="outline">{request.unit_name}</Badge>
+                        </td>
+                        <td className="px-4 py-4 text-sm">
+                          <StatusBadge status={statusKey} />
+                        </td>
+                        <td className="px-4 py-4 text-sm hidden lg:table-cell">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">{request.requester_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm hidden xl:table-cell text-muted-foreground">
+                          {request.assigned_officer_name || <span className="text-amber-600">Unassigned</span>}
+                        </td>
+                        <td className="px-4 py-4 text-sm hidden sm:table-cell text-muted-foreground">
+                          {getRelativeTime(request.updated_at)}
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/admin/requests/${request.id}`}>
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

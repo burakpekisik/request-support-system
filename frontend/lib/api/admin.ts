@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { AdminUserChangeStats } from './types';
+import { AdminUserChangeStats, UnitOfficer } from './types';
 
 
 class AdminService {
@@ -72,6 +72,14 @@ class AdminService {
 
   async getAllUnits(): Promise<any> {
     const response = await apiClient.get<any>(`/admin/units`);
+    return response;
+  }
+
+  /**
+   * Get officers by unit ID
+   */
+  async getOfficersByUnit(unitId: number): Promise<UnitOfficer[]> {
+    const response = await apiClient.get<UnitOfficer[]>(`/admin/units/${unitId}/officers`);
     return response;
   }
   

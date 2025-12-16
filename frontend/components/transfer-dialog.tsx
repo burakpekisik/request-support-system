@@ -15,8 +15,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, ArrowRightLeft, Loader2 } from "lucide-react"
+import { Search, ArrowRightLeft, Loader2, UserPlus } from "lucide-react"
 import { officerService } from "@/lib/api/officer"
+import { adminService } from "@/lib/api/admin"
 import { commonService } from "@/lib/api/common"
 import { getFullStaticUrl, getInitials } from "@/lib/constants"
 import type { UnitOfficer } from "@/lib/api/types"
@@ -25,11 +26,15 @@ interface TransferDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   currentUnit: string
+  unitId?: number // For admin to fetch officers from specific unit
   requestId?: number
   onTransferComplete?: () => void
+  title?: string
+  description?: string
+  disabledUserId?: number // User ID to disable in the list (e.g., requester or currently assigned officer)
 }
 
-export function TransferDialog({ open, onOpenChange, currentUnit, requestId, onTransferComplete }: TransferDialogProps) {
+export function TransferDialog({ open, onOpenChange, currentUnit, unitId, requestId, onTransferComplete, title, description, disabledUserId }: TransferDialogProps) {
   const [selectedOfficer, setSelectedOfficer] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [officers, setOfficers] = useState<UnitOfficer[]>([])
@@ -47,13 +52,17 @@ export function TransferDialog({ open, onOpenChange, currentUnit, requestId, onT
       setSearchQuery("")
       setError(null)
     }
-  }, [open])
+  }, [open, unitId])
 
   const loadOfficers = async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await officerService.getUnitOfficers()
+      // If unitId is provided (admin case), fetch officers from that specific unit
+      // Otherwise, fetch officers from current user's unit (officer case)
+      const data = unitId 
+        ? await adminService.getOfficersByUnit(unitId)
+        : await officerService.getUnitOfficers()
       setOfficers(data)
     } catch (err) {
       console.error("Failed to load officers:", err)
@@ -95,11 +104,11 @@ export function TransferDialog({ open, onOpenChange, currentUnit, requestId, onT
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ArrowRightLeft className="w-5 h-5" />
-            Transfer Request
+            {title ? <UserPlus className="w-5 h-5" /> : <ArrowRightLeft className="w-5 h-5" />}
+            {title || "Transfer Request"}
           </DialogTitle>
           <DialogDescription>
-            Transfer this request to another officer in your unit.
+            {description || "Transfer this request to another officer in your unit."}
           </DialogDescription>
         </DialogHeader>
 
@@ -137,30 +146,46 @@ export function TransferDialog({ open, onOpenChange, currentUnit, requestId, onT
             ) : (
               <RadioGroup value={selectedOfficer} onValueChange={setSelectedOfficer}>
                 <div className="space-y-2">
-                  {filteredOfficers.map((officer) => (
-                    <Label
-                      key={officer.id}
-                      htmlFor={`officer-${officer.id}`}
-                      className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                    >
-                      <RadioGroupItem value={String(officer.id)} id={`officer-${officer.id}`} />
-                      <Avatar className="h-9 w-9">
-                        {officer.avatarUrl && (
-                          <AvatarImage src={getFullStaticUrl(officer.avatarUrl) || undefined} />
+                  {filteredOfficers.map((officer) => {
+                    const isDisabled = disabledUserId === officer.id
+                    return (
+                      <Label
+                        key={officer.id}
+                        htmlFor={`officer-${officer.id}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5 ${
+                          isDisabled 
+                            ? "opacity-50 cursor-not-allowed" 
+                            : "cursor-pointer hover:bg-muted/50"
+                        }`}
+                      >
+                        <RadioGroupItem 
+                          value={String(officer.id)} 
+                          id={`officer-${officer.id}`} 
+                          disabled={isDisabled}
+                        />
+                        <Avatar className="h-9 w-9">
+                          {officer.avatarUrl && (
+                            <AvatarImage src={getFullStaticUrl(officer.avatarUrl) || undefined} />
+                          )}
+                          <AvatarFallback className="bg-secondary text-secondary-foreground text-sm">
+                            {getInitials(`${officer.firstName} ${officer.lastName}`)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{officer.firstName} {officer.lastName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{officer.email}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                          {officer.roleName}
+                        </span>
+                        {isDisabled && (
+                          <span className="text-xs text-muted-foreground">
+                            {disabledUserId === officer.id && title?.includes("Transfer") ? "(Current)" : "(Requester)"}
+                          </span>
                         )}
-                        <AvatarFallback className="bg-secondary text-secondary-foreground text-sm">
-                          {getInitials(`${officer.firstName} ${officer.lastName}`)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{officer.firstName} {officer.lastName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{officer.email}</p>
-                      </div>
-                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                        {officer.roleName}
-                      </span>
-                    </Label>
-                  ))}
+                      </Label>
+                    )
+                  })}
                   {filteredOfficers.length === 0 && !loading && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       {officers.length === 0 ? "No other officers in your unit" : "No officers found"}

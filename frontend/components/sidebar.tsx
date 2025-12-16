@@ -63,6 +63,7 @@ export function Sidebar({ role }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const items = navigationItems[role]
   const RoleIcon = roleIcons[role]
+  const homeHref = `/${role}`
 
   return (
     <aside
@@ -72,7 +73,7 @@ export function Sidebar({ role }: SidebarProps) {
       )}
     >
       {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
+      <Link href={homeHref} className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
           <RoleIcon className="w-5 h-5 text-primary-foreground" />
         </div>
@@ -82,7 +83,7 @@ export function Sidebar({ role }: SidebarProps) {
             <span className="text-xs text-muted-foreground">{roleLabels[role]}</span>
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">

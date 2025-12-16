@@ -247,5 +247,22 @@ public class AdminController {
         }
     }
 
+    /**
+     * Get officers by unit ID
+     * GET /api/admin/units/{unitId}/officers
+     */
+    @GetMapping("/units/{unitId}/officers")
+    public ResponseEntity<?> getOfficersByUnit(
+            @PathVariable Integer unitId,
+            Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            List<Map<String, Object>> officers = adminService.getOfficersByUnit(unitId);
+            return ResponseEntity.ok(officers);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 
 }
