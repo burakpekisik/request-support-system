@@ -44,6 +44,36 @@ class AdminService {
     const response = await apiClient.get<{ unitName: string; requestCount: number }[]>('/admin/dashboard/stats/requests-by-unit');
     return response;
   }
+
+  async getAdminStatsPendingRequestChangePercentage(): Promise<AdminUserChangeStats> {
+    const response = await apiClient.get<AdminUserChangeStats>('/admin/dashboard/stats/monthly-pending-request-change');
+    return response;
+  }
+
+  async getAdminRequests(status: string = 'all', unit: string = 'all', page: number = 1, size: number = 10): Promise<any> {
+    const response = await apiClient.get<any>(`/admin/requests?status=${status}&unit=${unit}&page=${page}&size=${size}`);
+    return response;
+  }
+
+  async getAdminUsers(search: string = '', role: string = 'all', page: number = 1, size: number = 10): Promise<any> {
+    const response = await apiClient.get<any>(`/admin/users?search=${search}&role=${role}&page=${page}&size=${size}`);
+    return response;
+  }
+
+  async updateUserRole(userId: number, roleId: number): Promise<any> {
+    const response = await apiClient.post<any>(`/admin/users/${userId}/role`, { roleId });
+    return response;
+  }
+
+  async updateUserUnits(userId: number, unitIds: number[]): Promise<any> {
+    const response = await apiClient.post<any>(`/admin/users/${userId}/units`, { unitIds });
+    return response;
+  }
+
+  async getAllUnits(): Promise<any> {
+    const response = await apiClient.get<any>(`/admin/units`);
+    return response;
+  }
   
 }
 

@@ -99,7 +99,55 @@ public class AdminService {
         dto.setRequestCount(((Number) row.get("request_count")).intValue());
         return dto;
     }).toList();
+    }
+
+    @Transactional
+    public UserChangeStatsDto getMonthlyPendingRequestChange() {
+        Double percentageChange = adminDashboardRepository.calculatePendingRequestChangePercentageByMonth();
+
+        UserChangeStatsDto statsDto = new UserChangeStatsDto();
+        statsDto.setPercentage(percentageChange != null ? percentageChange : 0.0);
+        statsDto.setLabel("Monthly Request Change");
+        if (percentageChange == null || percentageChange == 0.0 || percentageChange > 0) {
+            statsDto.setIsPositive(true);
+        } 
+        else {
+            statsDto.setIsPositive(false);
+        }
+
+        return statsDto;
+    }
+
+    @Transactional
+    public Map<String, Object> getRequestsWithFilters(String status, String unit, int page, int size) {
+        return adminDashboardRepository.getRequestsWithFilters(status, unit, page, size);
+    }
+
+    @Transactional
+    public Map<String, Object> getUsersWithFilters(String search, String role, int page, int size) {
+        return adminDashboardRepository.getUsersWithFilters(search, role, page, size);
+    }
+
+    @Transactional
+    public void updateUserRole(Long userId, Integer roleId) {
+        adminDashboardRepository.updateUserRole(userId, roleId);
+    }
+
+    @Transactional
+    public void assignUserToUnits(Long userId, List<Integer> unitIds) {
+        adminDashboardRepository.assignUserToUnits(userId, unitIds);
+    }
+
+    @Transactional
+    public List<Map<String, Object>> getAllUnits() {
+        return adminDashboardRepository.getAllUnits();
+    }
+
+    @Transactional
+    public List<Map<String, Object>> getUserUnits(Long userId) {
+        return adminDashboardRepository.getUserUnits(userId);
+    }
+
 }
 
 
-}

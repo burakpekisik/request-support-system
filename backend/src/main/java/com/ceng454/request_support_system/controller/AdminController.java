@@ -1,5 +1,6 @@
 package com.ceng454.request_support_system.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ceng454.request_support_system.dto.UserChangeStatsDto;
@@ -139,5 +144,108 @@ public class AdminController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/dashboard/stats/monthly-pending-request-change")
+    public ResponseEntity<UserChangeStatsDto> getTotalPendingRequestsChangeByMonth(Authentication authentication) {
+        try {
+            // Authentication object'inden userId al (JwtAuthenticationFilter set ediyor)
+            Long adminId = Long.parseLong(authentication.getName());
+            UserChangeStatsDto adminMonthlyPendingRequestChange = adminService.getMonthlyPendingRequestChange();
+
+            return ResponseEntity.ok(adminMonthlyPendingRequestChange);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/requests")
+    public ResponseEntity<?> getRequestsWithFilters(
+            @RequestParam(defaultValue = "all") String status,
+            @RequestParam(defaultValue = "all") String unit,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            Map<String, Object> result = adminService.getRequestsWithFilters(status, unit, page, size);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getUsersWithFilters(
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "all") String role,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            Map<String, Object> result = adminService.getUsersWithFilters(search, role, page, size);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/users/{userId}/role")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long userId,
+            @RequestBody Map<String, Integer> requestBody,
+            Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            Integer roleId = requestBody.get("roleId");
+            
+            if (roleId == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "roleId is required"));
+            }
+            
+            adminService.updateUserRole(userId, roleId);
+            return ResponseEntity.ok(Map.of("message", "User role updated successfully"));
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/users/{userId}/units")
+    public ResponseEntity<?> assignUserToUnits(
+            @PathVariable Long userId,
+            @RequestBody Map<String, List<Integer>> requestBody,
+            Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            List<Integer> unitIds = requestBody.get("unitIds");
+            
+            if (unitIds == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "unitIds is required"));
+            }
+            
+            adminService.assignUserToUnits(userId, unitIds);
+            return ResponseEntity.ok(Map.of("message", "User units assigned successfully"));
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/units")
+    public ResponseEntity<?> getAllUnits(Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            List<Map<String, Object>> units = adminService.getAllUnits();
+            return ResponseEntity.ok(units);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
 }

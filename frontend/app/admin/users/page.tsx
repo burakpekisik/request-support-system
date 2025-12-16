@@ -1,21 +1,26 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { UsersTable } from "@/components/users-table"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Users, GraduationCap, Building2, Shield } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Search, Users, GraduationCap, Building2, Shield, ChevronLeft, ChevronRight } from "lucide-react"
 import { StatsCard } from "@/components/stats-card"
 import { AssignUnitDialog } from "@/components/assign-unit-dialog"
 import { ChangeRoleDialog } from "@/components/change-role-dialog"
+import { adminService } from "@/lib/api/admin"
 
 export type User = {
   id: string
   tc_number: string
-  name: string
-  surname: string
-  gender: "Male" | "Female"
-  role: "student" | "officer" | "admin"
+  first_name?: string
+  last_name?: string
+  name?: string
+  surname?: string
+  gender?: "Male" | "Female"
+  role_name?: string
+  role?: "student" | "officer" | "admin"
   email: string
   assignedUnits?: string[]
 }
@@ -100,16 +105,59 @@ const initialUsers: User[] = [
 ]
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const [users, setUsers] = useState<User[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [assignUnitOpen, setAssignUnitOpen] = useState(false)
   const [changeRoleOpen, setChangeRoleOpen] = useState(false)
   const [roleFilter, setRoleFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const pageSize = 10
 
-  const studentCount = users.filter((u) => u.role === "student").length
-  const officerCount = users.filter((u) => u.role === "officer").length
-  const adminCount = users.filter((u) => u.role === "admin").length
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      console.log(`[Frontend] Fetching users - Search: ${searchQuery}, Role: ${roleFilter}, Page: ${currentPage}`)
+      const result = await adminService.getAdminUsers(searchQuery, roleFilter, currentPage, pageSize)
+      console.log(`[Frontend] Users result received:`, result)
+      
+      if (result && result.data) {
+        const mappedUsers = result.data.map((user: any) => ({
+          id: user.id.toString(),
+          tc_number: user.tc_number,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          name: user.first_name,
+          surname: user.last_name,
+          email: user.email,
+          role_name: user.role_name,
+          role: user.role_name?.toLowerCase(),
+        }))
+        
+        setUsers(mappedUsers)
+        setTotalPages(result.totalPages || 1)
+        setTotalUsers(result.total || 0)
+        console.log(`[Frontend] Loaded ${mappedUsers.length} users, total: ${result.total}, totalPages: ${result.totalPages}`)
+      }
+    } catch (error) {
+      console.error("[Frontend] Error fetching users:", error)
+    }
+  }
+
+  useEffect(() => {
+    console.log("[Frontend] Dependencies changed - searchQuery, roleFilter, or currentPage updated")
+    setCurrentPage(1)
+  }, [searchQuery, roleFilter])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [searchQuery, roleFilter, currentPage, pageSize])
+
+  const studentCount = users.filter((u) => u.role_name === "Student" || u.role === "student").length
+  const officerCount = users.filter((u) => u.role_name === "Officer" || u.role === "officer").length
+  const adminCount = users.filter((u) => u.role_name === "Admin" || u.role === "admin").length
 
   const handleAssignUnit = (user: User) => {
     setSelectedUser(user)
@@ -130,23 +178,44 @@ export default function AdminUsersPage() {
     setUsers((prev) =>
       prev.map((u) =>
         u.id === userId
-          ? { ...u, role: newRole, assignedUnits: newRole === "officer" ? u.assignedUnits : undefined }
+          ? { ...u, role_name: newRole.charAt(0).toUpperCase() + newRole.slice(1), role: newRole, assignedUnits: newRole === "officer" ? u.assignedUnits : undefined }
           : u,
       ),
     )
     setChangeRoleOpen(false)
   }
 
-  const filteredUsers = users.filter((user) => {
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
-    const matchesSearch =
-      searchQuery === "" ||
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.surname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.tc_number.includes(searchQuery) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesRole && matchesSearch
-  })
+  const handleRoleFilterChange = (value: string) => {
+    setRoleFilter(value)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+  }
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  const handlePageClick = (pageNum: number) => {
+    setCurrentPage(pageNum)
+  }
+
+  const startItem = (currentPage - 1) * pageSize + 1
+  const endItem = Math.min(currentPage * pageSize, totalUsers)
+  
+  const pageNumbers = []
+  for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+    pageNumbers.push(i)
+  }
 
   return (
     <div className="space-y-6">
@@ -181,10 +250,10 @@ export default function AdminUsersPage() {
             placeholder="Search by name, TC number, or email..."
             className="pl-9"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <Select value={roleFilter} onValueChange={handleRoleFilterChange}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
@@ -197,7 +266,78 @@ export default function AdminUsersPage() {
         </Select>
       </div>
 
-      <UsersTable users={filteredUsers} onAssignUnit={handleAssignUnit} onChangeRole={handleChangeRole} />
+      <UsersTable users={users} onAssignUnit={handleAssignUnit} onChangeRole={handleChangeRole} />
+
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+        <div className="text-sm text-muted-foreground">
+          Showing {startItem} to {endItem} of {totalUsers} users
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePreviousPage}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {currentPage > 3 && (
+              <>
+                <Button
+                  variant={currentPage === 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageClick(1)}
+                  className="w-9"
+                >
+                  1
+                </Button>
+                {currentPage > 4 && <span className="text-muted-foreground">...</span>}
+              </>
+            )}
+            
+            {pageNumbers.map((num) => (
+              <Button
+                key={num}
+                variant={currentPage === num ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageClick(num)}
+                className="w-9"
+              >
+                {num}
+              </Button>
+            ))}
+
+            {currentPage < totalPages - 2 && (
+              <>
+                {currentPage < totalPages - 3 && <span className="text-muted-foreground">...</span>}
+                <Button
+                  variant={currentPage === totalPages ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageClick(totalPages)}
+                  className="w-9"
+                >
+                  {totalPages}
+                </Button>
+              </>
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages || totalPages === 0}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
 
       {selectedUser && (
         <>

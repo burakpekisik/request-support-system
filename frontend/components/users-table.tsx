@@ -37,14 +37,15 @@ export function UsersTable({ users, onAssignUnit, onChangeRole }: UsersTableProp
           </TableHeader>
           <TableBody>
             {users.map((user) => {
-              const role = roleConfig[user.role]
+              const userRole = user.role || (user.role_name?.toLowerCase() as any)
+              const role = roleConfig[userRole] || { label: "Unknown", variant: "default" as const, icon: UserCog }
               const RoleIcon = role.icon
               return (
                 <TableRow key={user.id}>
                   <TableCell className="font-mono text-sm">{user.tc_number}</TableCell>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.surname}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">{user.gender}</TableCell>
+                  <TableCell className="font-medium">{user.name || user.first_name}</TableCell>
+                  <TableCell>{user.surname || user.last_name}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{user.gender || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={role.variant} className="gap-1">
                       <RoleIcon className="w-3 h-3" />
@@ -55,7 +56,7 @@ export function UsersTable({ users, onAssignUnit, onChangeRole }: UsersTableProp
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       {/* Assign Unit - Only visible for officers */}
-                      {user.role === "officer" && (
+                      {userRole === "officer" && (
                         <Button variant="outline" size="sm" onClick={() => onAssignUnit(user)} className="gap-1">
                           <Building2 className="w-4 h-4" />
                           <span className="hidden xl:inline">Assign Unit</span>

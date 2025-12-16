@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Building2 } from "lucide-react"
 import type { User } from "@/app/admin/users/page"
+import { adminService } from "@/lib/api/admin"
 
 interface AssignUnitDialogProps {
   open: boolean
@@ -22,34 +23,54 @@ interface AssignUnitDialogProps {
   onSave: (userId: string, units: string[]) => void
 }
 
-const allUnits = [
-  "Information Technology",
-  "Student Affairs",
-  "Housing Services",
-  "Finance Department",
-  "Registrar",
-  "Facilities Management",
-  "Academic Affairs",
-  "Library Services",
-  "Health Services",
-  "Career Services",
-]
-
 export function AssignUnitDialog({ open, onOpenChange, user, onSave }: AssignUnitDialogProps) {
-  const [selectedUnits, setSelectedUnits] = useState<string[]>([])
+  const [selectedUnits, setSelectedUnits] = useState<number[]>([])
+  const [allUnits, setAllUnits] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (open && user) {
-      setSelectedUnits(user.assignedUnits || [])
+    if (open) {
+      fetchUnits()
     }
-  }, [open, user])
+  }, [open])
 
-  const handleToggleUnit = (unit: string) => {
-    setSelectedUnits((prev) => (prev.includes(unit) ? prev.filter((u) => u !== unit) : [...prev, unit]))
+  const fetchUnits = async () => {
+    try {
+      console.log("[AssignUnitDialog] Fetching all units")
+      const units = await adminService.getAllUnits()
+      console.log("[AssignUnitDialog] Units fetched:", units)
+      setAllUnits(units)
+      setSelectedUnits([])
+    } catch (error) {
+      console.error("[AssignUnitDialog] Error fetching units:", error)
+    }
   }
 
-  const handleSave = () => {
-    onSave(user.id, selectedUnits)
+  const handleToggleUnit = (unitId: number) => {
+    setSelectedUnits((prev) =>
+      prev.includes(unitId) ? prev.filter((id) => id !== unitId) : [...prev, unitId]
+    )
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsLoading(true)
+      console.log(`[AssignUnitDialog] Saving units for user ${user.id}:`, selectedUnits)
+      
+      await adminService.updateUserUnits(Number(user.id), selectedUnits)
+      
+      console.log("[AssignUnitDialog] Units saved successfully")
+      const unitNames = allUnits
+        .filter((u) => selectedUnits.includes(u.id))
+        .map((u) => u.name)
+      
+      onSave(user.id, unitNames)
+      onOpenChange(false)
+    } catch (error) {
+      console.error("[AssignUnitDialog] Error saving units:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -63,24 +84,29 @@ export function AssignUnitDialog({ open, onOpenChange, user, onSave }: AssignUni
           <DialogDescription>
             Select units to assign to{" "}
             <span className="font-medium">
-              {user.name} {user.surname}
+              {user.name || user.first_name} {user.surname || user.last_name}
             </span>
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {allUnits.map((unit) => (
-              <div key={unit} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox
-                  id={unit}
-                  checked={selectedUnits.includes(unit)}
-                  onCheckedChange={() => handleToggleUnit(unit)}
-                />
-                <Label htmlFor={unit} className="flex-1 cursor-pointer text-sm font-normal">
-                  {unit}
-                </Label>
-              </div>
-            ))}
+            {allUnits.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Loading units...</p>
+            ) : (
+              allUnits.map((unit) => (
+                <div key={unit.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50">
+                  <Checkbox
+                    id={`unit-${unit.id}`}
+                    checked={selectedUnits.includes(unit.id)}
+                    onCheckedChange={() => handleToggleUnit(unit.id)}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor={`unit-${unit.id}`} className="flex-1 cursor-pointer text-sm font-normal">
+                    {unit.name}
+                  </Label>
+                </div>
+              ))
+            )}
           </div>
           {selectedUnits.length > 0 && (
             <div className="mt-4 pt-4 border-t">
@@ -91,10 +117,12 @@ export function AssignUnitDialog({ open, onOpenChange, user, onSave }: AssignUni
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
