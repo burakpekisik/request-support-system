@@ -670,6 +670,22 @@ public class RequestRepository {
         jdbcTemplate.update(sql, newStatusId, requestId);
     }
 
+    /**
+     * Request priority'sini güncelle
+     */
+    public void updatePriority(Long requestId, Integer newPriorityId) {
+        String sql = "UPDATE requests SET priority_id = ?, updated_at = NOW() WHERE id = ?";
+        jdbcTemplate.update(sql, newPriorityId, requestId);
+    }
+
+    /**
+     * Get priority_id from request
+     */
+    public Integer getPriorityId(Long requestId) {
+        String sql = "SELECT priority_id FROM requests WHERE id = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, requestId);
+    }
+
         // ========== Student Dashboard Methods ========== 
     
         public List<RequestSummary> findRecentByRequesterId(Long requesterId, int limit) {

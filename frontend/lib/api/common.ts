@@ -147,6 +147,17 @@ class CommonService {
     );
     return response;
   }
+
+  /**
+   * Update request priority
+   */
+  async updatePriority(requestId: number | string, priorityId: number): Promise<{ message: string; newPriorityId: number }> {
+    const response = await apiClient.put<{ message: string; newPriorityId: number }>(
+      `/requests/${requestId}/priority`,
+      { priorityId }
+    );
+    return response;
+  }
 }
 
 export const commonService = new CommonService();

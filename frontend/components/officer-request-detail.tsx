@@ -25,6 +25,10 @@ import {
   statusIdMap,
   statusIdReverseMap,
   statusOptions,
+  PriorityType,
+  priorityIdMap,
+  priorityIdReverseMap,
+  priorityOptions,
   getInitials,
   formatDate,
   formatFileSize,
@@ -56,6 +60,7 @@ import {
   File,
   Download,
   Image,
+  Flag,
 } from "lucide-react"
 
 interface OfficerRequestDetailProps {
@@ -81,6 +86,8 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
   const [reply, setReply] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<StatusType>("pending")
+  const [selectedPriority, setSelectedPriority] = useState<PriorityType>("normal")
+  const [isUpdatingPriority, setIsUpdatingPriority] = useState(false)
   const [isTransferOpen, setIsTransferOpen] = useState(false)
   const [isTakeOwnershipOpen, setIsTakeOwnershipOpen] = useState(false)
   const [isTakingOwnership, setIsTakingOwnership] = useState(false)
@@ -142,6 +149,10 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
         // Set initial status from request data
         const statusKey = statusIdMap[detail.statusId] || "pending"
         setSelectedStatus(statusKey)
+
+        // Set initial priority from request data
+        const priorityKey = priorityIdMap[detail.priorityId] || "normal"
+        setSelectedPriority(priorityKey)
       } catch (err) {
         console.error('Failed to fetch request data:', err)
         setError('Failed to load request details. Please try again.')
@@ -218,6 +229,41 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
       setError('Failed to take ownership. Please try again.')
     } finally {
       setIsTakingOwnership(false)
+    }
+  }
+
+  // Handle priority change
+  const handlePriorityChange = async (newPriority: PriorityType) => {
+    if (!requestData) return
+    
+    const newPriorityId = priorityIdReverseMap[newPriority]
+    if (newPriorityId === requestData.priorityId) {
+      setSelectedPriority(newPriority)
+      return
+    }
+
+    setIsUpdatingPriority(true)
+    setError(null)
+    try {
+      await commonService.updatePriority(requestId, newPriorityId)
+      
+      // Refresh request data and timeline
+      const [updatedDetail, updatedTimeline] = await Promise.all([
+        commonService.getRequestDetail(requestId),
+        commonService.getTimeline(requestId),
+      ])
+      
+      setRequestData(updatedDetail)
+      setTimeline(updatedTimeline)
+      setSelectedPriority(newPriority)
+    } catch (err) {
+      console.error('Failed to update priority:', err)
+      setError('Failed to update priority. Please try again.')
+      // Reset to current priority on error
+      const currentPriorityKey = priorityIdMap[requestData.priorityId] || "normal"
+      setSelectedPriority(currentPriorityKey)
+    } finally {
+      setIsUpdatingPriority(false)
     }
   }
 
@@ -604,6 +650,51 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
                 <div>
                   <p className="text-xs text-muted-foreground">Category</p>
                   <p className="font-medium">{requestData.category}</p>
+                </div>
+              </div>
+
+              {/* Priority - Dropdown if assigned officer, Badge if not */}
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Flag className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground mb-1">Priority</p>
+                  {isAssignedToMe && !isFinal ? (
+                    <Select 
+                      value={selectedPriority} 
+                      onValueChange={(value) => handlePriorityChange(value as PriorityType)}
+                      disabled={isUpdatingPriority}
+                    >
+                      <SelectTrigger className="w-full h-8">
+                        {isUpdatingPriority ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Updating...</span>
+                          </div>
+                        ) : (
+                          <SelectValue placeholder="Select priority" />
+                        )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {priorityOptions.map((priority) => (
+                          <SelectItem key={priority.value} value={priority.value}>
+                            <div className="flex items-center gap-2">
+                              <Flag className={cn("w-3 h-3", priority.color)} />
+                              <span>{priority.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className={cn(
+                      "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium",
+                      getPriorityColorClass(requestData.priority)
+                    )}>
+                      {requestData.priority}
+                    </div>
+                  )}
                 </div>
               </div>
 

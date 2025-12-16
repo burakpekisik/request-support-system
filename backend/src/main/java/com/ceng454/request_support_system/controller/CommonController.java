@@ -1,6 +1,7 @@
 package com.ceng454.request_support_system.controller;
 
 import com.ceng454.request_support_system.dto.*;
+import com.ceng454.request_support_system.enums.Priority;
 import com.ceng454.request_support_system.enums.Status;
 import com.ceng454.request_support_system.model.Attachment;
 import com.ceng454.request_support_system.model.RequestTimeline;
@@ -623,6 +624,86 @@ public class CommonController {
             return ResponseEntity.ok(Map.of(
                     "message", "Request cancelled successfully",
                     "newStatusId", newStatusId
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Update request priority
+     * PUT /api/requests/{id}/priority
+     */
+    @PutMapping("/requests/{id}/priority")
+    public ResponseEntity<?> updatePriority(
+            @PathVariable Long id,
+            @RequestBody Map<String, Integer> body,
+            Authentication authentication
+    ) {
+        try {
+            Long officerId = Long.parseLong(authentication.getName());
+            Integer newPriorityId = body.get("priorityId");
+
+            if (newPriorityId == null || newPriorityId < 1 || newPriorityId > 4) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid priority ID. Must be between 1 and 4."
+                ));
+            }
+
+            // Check if request exists
+            Map<String, Object> requestData = requestRepository.findById(id);
+            if (requestData == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Check if current user is the assigned officer
+            Object assignedOfficerIdObj = requestData.get("assigned_officer_id");
+            if (assignedOfficerIdObj == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "This request is not assigned to any officer. Please take ownership first."
+                ));
+            }
+
+            Long assignedOfficerId = ((Number) assignedOfficerIdObj).longValue();
+            if (!assignedOfficerId.equals(officerId)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "You are not the assigned officer for this request"
+                ));
+            }
+
+            // Check if request is in a final status (resolved or cancelled)
+            Integer currentStatusId = requestRepository.getCurrentStatusId(id);
+            if (currentStatusId != null) {
+                int resolvedSuccessId = Status.RESOLVED_SUCCESSFULLY.getId();
+                int resolvedNegId = Status.RESOLVED_NEGATIVELY.getId();
+                int cancelledId = Status.CANCELLED.getId();
+                if (currentStatusId == resolvedSuccessId || currentStatusId == resolvedNegId || currentStatusId == cancelledId) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Cannot change priority of a resolved or cancelled request"
+                    ));
+                }
+            }
+
+            // Get current priority for timeline
+            Integer currentPriorityId = requestRepository.getPriorityId(id);
+
+            // Update priority
+            requestRepository.updatePriority(id, newPriorityId);
+
+            // Create timeline entry for priority change
+            RequestTimeline timeline = new RequestTimeline();
+            timeline.setRequestId(id);
+            timeline.setActorId(officerId);
+            timeline.setPreviousStatusId(currentStatusId);
+            timeline.setNewStatusId(currentStatusId);
+            String currentPriorityName = Priority.fromId(currentPriorityId).getDisplayName();
+            String newPriorityName = Priority.fromId(newPriorityId).getDisplayName();
+            timeline.setComment("Priority changed from " + currentPriorityName + " to " + newPriorityName);
+            timelineRepository.save(timeline);
+
+            return ResponseEntity.ok(Map.of(
+                "message", "Priority updated successfully",
+                "newPriorityId", newPriorityId
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

@@ -60,6 +60,30 @@ export const priorityColors: Record<string, string> = {
   Critical: "bg-red-600/20 text-red-700 border-red-600/30",
 };
 
+// Priority options for dropdown
+export type PriorityType = "low" | "normal" | "high" | "critical";
+
+export const priorityIdMap: Record<number, PriorityType> = {
+  1: "low",
+  2: "normal",
+  3: "high",
+  4: "critical",
+};
+
+export const priorityIdReverseMap: Record<PriorityType, number> = {
+  low: 1,
+  normal: 2,
+  high: 3,
+  critical: 4,
+};
+
+export const priorityOptions: { value: PriorityType; label: string; color: string }[] = [
+  { value: "low", label: "Low", color: "text-green-600" },
+  { value: "normal", label: "Normal", color: "text-cyan-600" },
+  { value: "high", label: "High", color: "text-yellow-600" },
+  { value: "critical", label: "Critical", color: "text-red-600" },
+];
+
 // Backend Base URL (removes /api from API URL)
 export const getBackendBaseUrl = (): string => {
   return process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080';
