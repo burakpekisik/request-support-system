@@ -40,7 +40,15 @@ export function AssignUnitDialog({ open, onOpenChange, user, onSave }: AssignUni
       const units = await adminService.getAllUnits()
       console.log("[AssignUnitDialog] Units fetched:", units)
       setAllUnits(units)
-      setSelectedUnits([])
+      
+      // Pre-select user's current units
+      if (user.unit_ids) {
+        const currentUnitIds = user.unit_ids.split(',').map((id: string) => parseInt(id.trim())).filter((id: number) => !isNaN(id))
+        console.log("[AssignUnitDialog] Pre-selecting units:", currentUnitIds)
+        setSelectedUnits(currentUnitIds)
+      } else {
+        setSelectedUnits([])
+      }
     } catch (error) {
       console.error("[AssignUnitDialog] Error fetching units:", error)
     }

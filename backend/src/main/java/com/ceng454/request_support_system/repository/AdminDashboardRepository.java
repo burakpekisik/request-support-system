@@ -343,9 +343,11 @@ public class AdminDashboardRepository {
         
         System.out.println("[AdminDashboardRepository] Total count: " + totalCount);
         
-        // Build data query
+        // Build data query - get users first
         StringBuilder dataSqlBuilder = new StringBuilder(
-            "SELECT DISTINCT u.id, u.tc_number, u.first_name, u.last_name, u.email, r.name as role_name " +
+            "SELECT DISTINCT u.id, u.tc_number, u.first_name, u.last_name, u.email, " +
+            "(SELECT r2.name FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = u.id LIMIT 1) as role_name, " +
+            "u.created_at " +
             "FROM users u " +
             "LEFT JOIN user_roles ur ON u.id = ur.user_id " +
             "LEFT JOIN roles r ON ur.role_id = r.id "
@@ -364,10 +366,48 @@ public class AdminDashboardRepository {
         String dataSql = dataSqlBuilder.toString();
         System.out.println("[AdminDashboardRepository] Data SQL: " + dataSql + " with params: " + dataParams);
         
-        List<Map<String, Object>> data = jdbcTemplate.queryForList(dataSql, dataParams.toArray());
+        List<Map<String, Object>> users = jdbcTemplate.queryForList(dataSql, dataParams.toArray());
+        
+        // Get unit assignments for all users in a single query
+        if (!users.isEmpty()) {
+            List<Long> userIds = users.stream()
+                .map(u -> ((Number) u.get("id")).longValue())
+                .collect(java.util.stream.Collectors.toList());
+            
+            String unitsSql = "SELECT oua.user_id, un.id as unit_id, un.name as unit_name " +
+                "FROM officer_unit_assignments oua " +
+                "JOIN units un ON oua.unit_id = un.id " +
+                "WHERE oua.user_id IN (" + userIds.stream().map(id -> "?").collect(java.util.stream.Collectors.joining(",")) + ")";
+            
+            List<Map<String, Object>> unitAssignments = jdbcTemplate.queryForList(unitsSql, userIds.toArray());
+            
+            // Group units by user_id
+            Map<Long, List<Map<String, Object>>> unitsByUser = unitAssignments.stream()
+                .collect(java.util.stream.Collectors.groupingBy(ua -> ((Number) ua.get("user_id")).longValue()));
+            
+            // Add unit info to each user
+            for (Map<String, Object> user : users) {
+                Long userId = ((Number) user.get("id")).longValue();
+                List<Map<String, Object>> userUnits = unitsByUser.getOrDefault(userId, new ArrayList<>());
+                
+                if (!userUnits.isEmpty()) {
+                    String unitIds = userUnits.stream()
+                        .map(u -> u.get("unit_id").toString())
+                        .collect(java.util.stream.Collectors.joining(","));
+                    String unitNames = userUnits.stream()
+                        .map(u -> u.get("unit_name").toString())
+                        .collect(java.util.stream.Collectors.joining(", "));
+                    user.put("unit_ids", unitIds);
+                    user.put("unit_names", unitNames);
+                } else {
+                    user.put("unit_ids", null);
+                    user.put("unit_names", null);
+                }
+            }
+        }
         
         Map<String, Object> result = new HashMap<>();
-        result.put("data", data);
+        result.put("data", users);
         result.put("total", totalCount);
         result.put("page", page);
         result.put("size", size);

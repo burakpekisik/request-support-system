@@ -26,11 +26,12 @@ export function UsersTable({ users, onAssignUnit, onChangeRole }: UsersTableProp
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>ID</TableHead>
               <TableHead>TC Number</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Surname</TableHead>
-              <TableHead className="hidden md:table-cell">Gender</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead className="hidden md:table-cell">Unit</TableHead>
               <TableHead className="hidden lg:table-cell">E-mail</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -42,16 +43,17 @@ export function UsersTable({ users, onAssignUnit, onChangeRole }: UsersTableProp
               const RoleIcon = role.icon
               return (
                 <TableRow key={user.id}>
+                  <TableCell className="font-mono text-sm">{user.id}</TableCell>
                   <TableCell className="font-mono text-sm">{user.tc_number}</TableCell>
                   <TableCell className="font-medium">{user.name || user.first_name}</TableCell>
                   <TableCell>{user.surname || user.last_name}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">{user.gender || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={role.variant} className="gap-1">
                       <RoleIcon className="w-3 h-3" />
                       {role.label}
                     </Badge>
                   </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{user.unit_names || "—"}</TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{user.email}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">

@@ -18,10 +18,11 @@ export type User = {
   last_name?: string
   name?: string
   surname?: string
-  gender?: "Male" | "Female"
   role_name?: string
   role?: "student" | "officer" | "admin"
   email: string
+  unit_ids?: string
+  unit_names?: string
   assignedUnits?: string[]
 }
 
@@ -134,6 +135,8 @@ export default function AdminUsersPage() {
           email: user.email,
           role_name: user.role_name,
           role: user.role_name?.toLowerCase(),
+          unit_ids: user.unit_ids,
+          unit_names: user.unit_names,
         }))
         
         setUsers(mappedUsers)
@@ -170,7 +173,8 @@ export default function AdminUsersPage() {
   }
 
   const handleUpdateUnits = (userId: string, units: string[]) => {
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, assignedUnits: units } : u)))
+    // Refresh the user list to get updated unit assignments
+    fetchUsers()
     setAssignUnitOpen(false)
   }
 
