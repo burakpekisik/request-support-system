@@ -799,42 +799,42 @@ public class RequestRepository {
         public int calculateTotalRequestsTrendByRequester(Long requesterId) {
             String sql = """
                 SELECT
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND created_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
             """;
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-                int thisWeek = rs.getInt("this_week");
-                int lastWeek = rs.getInt("last_week");
-                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
-                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+                int thisMonth = rs.getInt("this_month");
+                int lastMonth = rs.getInt("last_month");
+                if (lastMonth == 0) return thisMonth > 0 ? 100 : 0;
+                return (int) (((double) (thisMonth - lastMonth) / lastMonth) * 100);
             }, requesterId, requesterId);
         }
     
         public int calculateActiveRequestsTrendByRequester(Long requesterId) {
             String sql = """
                 SELECT
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND created_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
             """;
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-                int thisWeek = rs.getInt("this_week");
-                int lastWeek = rs.getInt("last_week");
-                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
-                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+                int thisMonth = rs.getInt("this_month");
+                int lastMonth = rs.getInt("last_month");
+                if (lastMonth == 0) return thisMonth > 0 ? 100 : 0;
+                return (int) (((double) (thisMonth - lastMonth) / lastMonth) * 100);
             }, requesterId, requesterId);
         }
     
         public int calculateResolvedRequestsTrendByRequester(Long requesterId) {
             String sql = """
                 SELECT
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as this_week,
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND updated_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as last_week
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND updated_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
             """;
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-                int thisWeek = rs.getInt("this_week");
-                int lastWeek = rs.getInt("last_week");
-                if (lastWeek == 0) return thisWeek > 0 ? 100 : 0;
-                return (int) (((double) (thisWeek - lastWeek) / lastWeek) * 100);
+                int thisMonth = rs.getInt("this_month");
+                int lastMonth = rs.getInt("last_month");
+                if (lastMonth == 0) return thisMonth > 0 ? 100 : 0;
+                return (int) (((double) (thisMonth - lastMonth) / lastMonth) * 100);
             }, requesterId, requesterId);
         }
     }
