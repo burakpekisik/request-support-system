@@ -4,7 +4,7 @@ import { StatsCard } from "@/components/stats-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Users, FileText, CheckCircle, Clock, TrendingUp, Building2 } from "lucide-react"
+import { Users, FileText, CheckCircle, Clock } from "lucide-react"
 import { useEffect, useState } from "react"
 import { adminService } from "@/lib/api/admin"
 
@@ -128,65 +128,35 @@ export default function AdminDashboard() {
         <StatsCard title="Pending Requests" value={totalPendingRequests} icon={Clock} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Requests by Unit</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/requests">View all</Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {requestsByUnit.length > 0 && (() => {
-                const totalRequests = requestsByUnit.reduce((sum, item) => sum + item.requestCount, 0);
-                return requestsByUnit.map((item) => {
-                  const percentage = totalRequests > 0 ? (item.requestCount / totalRequests) * 100 : 0;
-                  return (
-                    <div key={item.unitName} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{item.unitName}</span>
-                        <span className="text-muted-foreground">{item.requestCount} requests</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
-                      </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Requests by Unit</CardTitle>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/admin/requests">View all</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {requestsByUnit.length > 0 && (() => {
+              const totalRequests = requestsByUnit.reduce((sum, item) => sum + item.requestCount, 0);
+              return requestsByUnit.map((item) => {
+                const percentage = totalRequests > 0 ? (item.requestCount / totalRequests) * 100 : 0;
+                return (
+                  <div key={item.unitName} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{item.unitName}</span>
+                      <span className="text-muted-foreground">{item.requestCount} requests</span>
                     </div>
-                  );
-                });
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { action: "New request submitted", user: "Zeynep Kaya", time: "2 min ago", icon: FileText },
-                { action: "Request resolved", user: "Mehmet Öztürk", time: "15 min ago", icon: CheckCircle },
-                { action: "New user registered", user: "Ali Demir", time: "1 hour ago", icon: Users },
-                { action: "Request transferred", user: "Fatma Yıldız", time: "2 hours ago", icon: Building2 },
-                { action: "Priority updated", user: "Admin", time: "3 hours ago", icon: TrendingUp },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="p-2 rounded-lg bg-muted">
-                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.action}</p>
-                    <p className="text-xs text-muted-foreground">{item.user}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{item.time}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                );
+              });
+            })()}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

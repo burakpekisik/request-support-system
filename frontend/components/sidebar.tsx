@@ -10,7 +10,6 @@ import {
   FileText,
   Inbox,
   Users,
-  Settings,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -42,7 +41,6 @@ const navigationItems = {
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "All Requests", href: "/admin/requests", icon: FileText },
     { name: "Users", href: "/admin/users", icon: Users },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
   ],
 }
 
