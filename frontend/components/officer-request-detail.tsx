@@ -741,7 +741,7 @@ export function OfficerRequestDetail({ requestId }: OfficerRequestDetailProps) {
           </Card>
 
           {/* Cancel Request Action - only for requester and non-final status */}
-          {isRequester && requestData.statusId < 4 && (
+          {isRequester && !isFinal && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Actions</CardTitle>

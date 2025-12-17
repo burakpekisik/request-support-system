@@ -22,7 +22,8 @@ import {
   formatDate,
   formatFileSize,
   formatFileSizeMb,
-  getPriorityColorClass
+  getPriorityColorClass,
+  isFinalStatus
 } from "@/lib/constants"
 import type { RequestDetail, TimelineEntry } from "@/lib/api/types"
 import { 
@@ -489,7 +490,7 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
               </div>
             </CardContent>
           </Card>
-          {requestData.statusId < 4 && (
+          {!isFinalStatus(requestData.statusId) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Actions</CardTitle>

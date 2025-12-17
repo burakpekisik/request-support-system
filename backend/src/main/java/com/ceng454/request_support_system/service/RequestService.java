@@ -50,7 +50,7 @@ public class RequestService {
         timeline.setActorId(userId);
         timeline.setPreviousStatusId(null); // İlk kayıt
         timeline.setNewStatusId(1);
-        timeline.setComment("Talep oluşturuldu.");
+        timeline.setComment("Request created.");
         timelineRepository.save(timeline);
 
         // 4. Dosyaları Kaydet (Opsiyonel)

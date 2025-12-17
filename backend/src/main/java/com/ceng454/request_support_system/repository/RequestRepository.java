@@ -779,19 +779,19 @@ public class RequestRepository {
         }
     
         public long countActiveByRequesterId(Long requesterId) {
-            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3)";
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3, 6)";
             Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
             return count != null ? count : 0;
         }
     
         public long countPendingByRequesterId(Long requesterId) {
-            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id = 3";
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id = 1";
             Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
             return count != null ? count : 0;
         }
     
         public long countResolvedByRequesterId(Long requesterId) {
-            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5)";
+            String sql = "SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (7, 8)";
             Long count = jdbcTemplate.queryForObject(sql, Long.class, requesterId);
             return count != null ? count : 0;
         }
@@ -813,8 +813,8 @@ public class RequestRepository {
         public int calculateActiveRequestsTrendByRequester(Long requesterId) {
             String sql = """
                 SELECT
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND created_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3, 6) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (1, 2, 3, 6) AND created_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND created_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
             """;
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
                 int thisMonth = rs.getInt("this_month");
@@ -827,8 +827,8 @@ public class RequestRepository {
         public int calculateResolvedRequestsTrendByRequester(Long requesterId) {
             String sql = """
                 SELECT
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
-                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (4, 5) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND updated_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (7, 8) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as this_month,
+                    (SELECT COUNT(*) FROM requests WHERE requester_id = ? AND current_status_id IN (7, 8) AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND updated_at < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month
             """;
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
                 int thisMonth = rs.getInt("this_month");
