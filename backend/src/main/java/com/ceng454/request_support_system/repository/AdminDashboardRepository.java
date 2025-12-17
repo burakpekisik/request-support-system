@@ -19,7 +19,7 @@ public class AdminDashboardRepository {
 
 //User Stats
     public int countTotalUser() {
-        String sql = "SELECT COUNT(DISTINCT id) FROM users";
+        String sql = "SELECT COUNT(DISTINCT id) FROM users WHERE is_active = 1";
         return jdbcTemplate.queryForObject(sql, Integer.class);
     }
 
@@ -43,6 +43,7 @@ public class AdminDashboardRepository {
                         THEN 1 ELSE 0
                     END) AS last_month
                 FROM users
+                WHERE is_active = 1
             ) t
             """;
 
@@ -318,6 +319,9 @@ public class AdminDashboardRepository {
         List<Object> countParams = new ArrayList<>();
         List<String> conditions = new ArrayList<>();
         
+        // Always filter active users
+        conditions.add("u.is_active = 1");
+        
         if (search != null && !search.isEmpty()) {
             conditions.add("(u.first_name LIKE ? OR u.last_name LIKE ? OR u.tc_number LIKE ? OR u.email LIKE ?)");
             String searchParam = "%" + search + "%";
@@ -511,5 +515,24 @@ public class AdminDashboardRepository {
         """;
         
         return jdbcTemplate.queryForList(sql, unitId);
+    }
+
+    // Delete user (soft delete by setting is_active to false)
+    public void deleteUser(Long userId) {
+        System.out.println("[AdminDashboardRepository] deleteUser called - userId: " + userId);
+        
+        // Soft delete: set is_active = false
+        String sql = "UPDATE users SET is_active = 0 WHERE id = ?";
+        System.out.println("[AdminDashboardRepository] Executing SQL: " + sql + " with userId: " + userId);
+        
+        int rowsAffected = jdbcTemplate.update(sql, userId);
+        
+        System.out.println("[AdminDashboardRepository] Rows affected: " + rowsAffected);
+        
+        if (rowsAffected == 0) {
+            System.out.println("[AdminDashboardRepository] WARNING: No user found with id: " + userId);
+        } else {
+            System.out.println("[AdminDashboardRepository] SUCCESS: User soft deleted - userId: " + userId + ", rows affected: " + rowsAffected);
+        }
     }
 }

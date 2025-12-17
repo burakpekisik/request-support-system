@@ -83,6 +83,20 @@ class AdminService {
     return response;
   }
   
+  /**
+   * Delete a user by ID (admin only)
+   */
+  async deleteUser(userId: number): Promise<any> {
+    console.log("[AdminService] deleteUser called - userId:", userId);
+    try {
+      const response = await apiClient.delete<any>(`/admin/users/${userId}`);
+      console.log("[AdminService] deleteUser response:", response);
+      return response;
+    } catch (error) {
+      console.error("[AdminService] deleteUser error:", error);
+      throw error;
+    }
+  }
 }
 
 export const adminService = new AdminService();

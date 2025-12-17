@@ -9,21 +9,23 @@ import { Search, Users, GraduationCap, Building2, Shield, ChevronLeft, ChevronRi
 import { StatsCard } from "@/components/stats-card"
 import { AssignUnitDialog } from "@/components/assign-unit-dialog"
 import { ChangeRoleDialog } from "@/components/change-role-dialog"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { adminService } from "@/lib/api/admin"
 
 export type User = {
   id: string
-  tc_number: string
+  tc_number?: string
   first_name?: string
   last_name?: string
   name?: string
   surname?: string
   role_name?: string
   role?: "student" | "officer" | "admin"
-  email: string
+  email?: string
   unit_ids?: string
   unit_names?: string
   assignedUnits?: string[]
+  gender?: string
 }
 
 const initialUsers: User[] = [
@@ -117,6 +119,11 @@ export default function AdminUsersPage() {
   const [totalUsers, setTotalUsers] = useState(0)
   const pageSize = 10
 
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   // Fetch users from API
   const fetchUsers = async () => {
     try {
@@ -170,6 +177,36 @@ export default function AdminUsersPage() {
   const handleChangeRole = (user: User) => {
     setSelectedUser(user)
     setChangeRoleOpen(true)
+  }
+
+  const handleDeleteUser = (user: User) => {
+    setDeletingUser(user)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    setDeleteDialogOpen(open)
+    if (!open) setDeletingUser(null)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return
+    try {
+      setIsDeleting(true)
+      console.log("[Frontend] Confirming delete for user:", deletingUser.id, deletingUser.name || deletingUser.email)
+      const result = await adminService.deleteUser(Number(deletingUser.id))
+      console.log("[Frontend] Delete API response:", result)
+      // refresh users
+      console.log("[Frontend] Refreshing user list after deletion")
+      await fetchUsers()
+      setDeleteDialogOpen(false)
+      setDeletingUser(null)
+      console.log("[Frontend] User deleted and list refreshed")
+    } catch (error) {
+      console.error("[Frontend] Error deleting user:", error)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const handleUpdateUnits = (userId: string, units: string[]) => {
@@ -270,7 +307,7 @@ export default function AdminUsersPage() {
         </Select>
       </div>
 
-      <UsersTable users={users} onAssignUnit={handleAssignUnit} onChangeRole={handleChangeRole} />
+      <UsersTable users={users} onAssignUnit={handleAssignUnit} onChangeRole={handleChangeRole} onDeleteUser={handleDeleteUser} />
 
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
@@ -359,6 +396,19 @@ export default function AdminUsersPage() {
           />
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
+        title={`Delete user ${deletingUser?.name ?? deletingUser?.email ?? ""}`}
+        description={`Are you sure you want to permanently delete this user? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteUser}
+        isLoading={isDeleting}
+        variant="destructive"
+      />
     </div>
   )
 }

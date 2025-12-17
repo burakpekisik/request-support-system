@@ -4,13 +4,28 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Building2, UserCog, GraduationCap, Shield } from "lucide-react"
-import type { User } from "@/app/admin/users/page"
+import { Building2, UserCog, GraduationCap, Shield, Trash } from "lucide-react"
+
+// Local user type to avoid circular imports
+type User = {
+  id: string
+  tc_number?: string
+  first_name?: string
+  last_name?: string
+  name?: string
+  surname?: string
+  role_name?: string
+  role?: "student" | "officer" | "admin"
+  email?: string
+  unit_names?: string
+  assignedUnits?: string[]
+}
 
 interface UsersTableProps {
   users: User[]
   onAssignUnit: (user: User) => void
   onChangeRole: (user: User) => void
+  onDeleteUser?: (user: User) => void
 }
 
 const roleConfig = {
@@ -19,7 +34,7 @@ const roleConfig = {
   admin: { label: "Admin", variant: "destructive" as const, icon: Shield },
 }
 
-export function UsersTable({ users, onAssignUnit, onChangeRole }: UsersTableProps) {
+export function UsersTable({ users, onAssignUnit, onChangeRole, onDeleteUser }: UsersTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -69,6 +84,14 @@ export function UsersTable({ users, onAssignUnit, onChangeRole }: UsersTableProp
                         <UserCog className="w-4 h-4" />
                         <span className="hidden xl:inline">Change Role</span>
                       </Button>
+
+                      {/* Delete user - visible when onDeleteUser prop provided */}
+                      {typeof onDeleteUser !== "undefined" && (
+                        <Button variant="destructive" size="sm" onClick={() => onDeleteUser(user)} className="gap-1">
+                          <Trash className="w-4 h-4" />
+                          <span className="hidden xl:inline">Delete</span>
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

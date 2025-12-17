@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -261,6 +262,36 @@ public class AdminController {
             return ResponseEntity.ok(officers);
             
         } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Delete a user
+     * DELETE /api/admin/users/{userId}
+     */
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<?> deleteUser(
+            @PathVariable Long userId,
+            Authentication authentication) {
+        try {
+            Long adminId = Long.parseLong(authentication.getName());
+            System.out.println("[AdminController] DELETE /admin/users/{userId} called - adminId: " + adminId + ", userId: " + userId);
+            
+            // Ensure admin is not deleting themselves
+            if (adminId.equals(userId)) {
+                System.out.println("[AdminController] Error: Admin trying to delete their own account");
+                return ResponseEntity.badRequest().body(Map.of("error", "Cannot delete your own account"));
+            }
+            
+            System.out.println("[AdminController] Calling adminService.deleteUser(" + userId + ")");
+            adminService.deleteUser(userId);
+            System.out.println("[AdminController] User deleted successfully - userId: " + userId);
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+            
+        } catch (Exception e) {
+            System.out.println("[AdminController] Error deleting user: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
