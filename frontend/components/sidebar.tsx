@@ -15,6 +15,8 @@ import {
   GraduationCap,
   Shield,
   Building2,
+  LayoutGrid, // Ikon ekle
+  Building,   // Ikon ekle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -41,6 +43,9 @@ const navigationItems = {
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "All Requests", href: "/admin/requests", icon: FileText },
     { name: "Users", href: "/admin/users", icon: Users },
+    { name: "Categories", href: "/admin/categories", icon: LayoutGrid },
+    { name: "Units", href: "/admin/units", icon: Building },
+    
   ],
 }
 

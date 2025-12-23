@@ -1,6 +1,20 @@
 import { apiClient } from './client';
 import { AdminUserChangeStats, UnitOfficer } from './types';
 
+// Add Category and Unit types
+export type Category = {
+  id: number;
+  name: string;
+  isActive: boolean;
+};
+
+export type Unit = {
+  id: number;
+  name: string;
+  description: string;
+  isActive: boolean;
+};
+
 
 class AdminService {
   /**
@@ -70,9 +84,42 @@ class AdminService {
     return response;
   }
 
-  async getAllUnits(): Promise<any> {
-    const response = await apiClient.get<any>(`/admin/units`);
-    return response;
+  // Category Management
+  async getAllCategories(): Promise<Category[]> {
+    return apiClient.get<Category[]>('/admin/categories');
+  }
+
+  async addCategory(name: string): Promise<void> {
+    return apiClient.post<void>('/admin/categories', { name });
+  }
+
+  async updateCategory(id: number, name: string): Promise<void> {
+    return apiClient.put<void>(`/admin/categories/${id}`, { name });
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    return apiClient.delete<void>(`/admin/categories/${id}`);
+  }
+
+  async activateCategory(id: number): Promise<void> {
+    return apiClient.post<void>(`/admin/categories/${id}/activate`);
+  }
+
+  // Unit Management
+  async getAllUnits(): Promise<Unit[]> {
+    return apiClient.get<Unit[]>('/admin/units-control');
+  }
+
+  async addUnit(unit: Omit<Unit, 'id' | 'isActive'>): Promise<void> {
+    return apiClient.post<void>('/admin/units-control', unit);
+  }
+
+  async updateUnit(id: number, unit: Omit<Unit, 'id'>): Promise<void> {
+    return apiClient.put<void>(`/admin/units-control/${id}`, unit);
+  }
+
+  async deleteUnit(id: number): Promise<void> {
+    return apiClient.delete<void>(`/admin/units-control/${id}`);
   }
 
   /**
@@ -83,6 +130,9 @@ class AdminService {
     return response;
   }
   
+  async activateUnit(id: number): Promise<void> {
+    return apiClient.post<void>(`/admin/units-control/${id}/activate`);
+  }
 }
 
 export const adminService = new AdminService();
