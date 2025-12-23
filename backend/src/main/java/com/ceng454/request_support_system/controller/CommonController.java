@@ -622,7 +622,7 @@ public class CommonController {
             timeline.setActorId(currentUserId);
             timeline.setPreviousStatusId(currentStatusId);
             timeline.setNewStatusId(newStatusId);
-            timeline.setComment("Talep iptal edildi");
+            timeline.setComment("Request cancelled by requester");
             timelineRepository.save(timeline);
 
             return ResponseEntity.ok(Map.of(

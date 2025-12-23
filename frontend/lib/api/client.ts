@@ -37,7 +37,8 @@ class ApiClient {
       throw new Error(errorText || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : {} as T;
   }
 
   async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -76,7 +77,8 @@ class ApiClient {
       throw new Error(errorText || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : {} as T;
   }
 
   async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {

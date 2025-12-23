@@ -39,6 +39,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         
                         // Static files (avatars, attachments)
                         .requestMatchers("/uploads/**").permitAll()
