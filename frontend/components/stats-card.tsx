@@ -9,7 +9,8 @@ interface StatsCardProps {
   icon: LucideIcon
   trend?: {
     value: number
-    isPositive: boolean
+    isPositive: boolean  // Controls color (green/red)
+    isUp?: boolean       // Controls arrow direction (+/-), defaults to isPositive if not provided
   }
   className?: string
   iconClassName?: string
@@ -28,7 +29,7 @@ export function StatsCard({ title, value, description, icon: Icon, trend, classN
             )}
             {trend && (
               <p className={cn("text-sm mt-1", trend.isPositive ? "text-success" : "text-destructive")}>
-                {trend.isPositive ? "+" : "-"}
+                {(trend.isUp ?? trend.isPositive) ? "+" : "-"}
                 {trend.value}% from last month
               </p>
             )}

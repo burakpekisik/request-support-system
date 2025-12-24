@@ -129,11 +129,11 @@ export function LoginForm() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
+          {/* <div className="flex items-center justify-between text-sm">
             <Link href="/forgot-password" className="text-primary hover:underline">
               Forgot password?
             </Link>
-          </div>
+          </div> */}
 
           <Button type="submit" className="w-full h-11" disabled={loading}>
             {loading ? (

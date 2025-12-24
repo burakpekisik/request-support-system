@@ -259,12 +259,12 @@ public class RequestRepository {
     public int calculateNewRequestsTrend(Long officerId) {
         String sql = """
             SELECT 
-                (SELECT COUNT(*) FROM requests r
+                (SELECT COUNT(DISTINCT r.id) FROM requests r
                  INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
                  WHERE oua.user_id = ? 
                    AND YEAR(r.created_at) = YEAR(CURDATE())
                    AND MONTH(r.created_at) = MONTH(CURDATE())) as this_month,
-                (SELECT COUNT(*) FROM requests r
+                (SELECT COUNT(DISTINCT r.id) FROM requests r
                  INNER JOIN officer_unit_assignments oua ON r.unit_id = oua.unit_id
                  WHERE oua.user_id = ? 
                    AND YEAR(r.created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
@@ -274,7 +274,8 @@ public class RequestRepository {
         return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
             int thisMonth = rs.getInt("this_month");
             int lastMonth = rs.getInt("last_month");
-            if (lastMonth == 0) return 0;
+            System.out.println("[calculateNewRequestsTrend] officerId: " + officerId + ", thisMonth: " + thisMonth + ", lastMonth: " + lastMonth);
+            if (lastMonth == 0) return thisMonth > 0 ? 100 : 0;
             return (int) (((double) (thisMonth - lastMonth) / lastMonth) * 100);
         }, officerId, officerId);
     }

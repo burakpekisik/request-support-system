@@ -60,7 +60,8 @@ export default function OfficerDashboard() {
           icon={Inbox} 
           trend={stats.newRequestsTrend !== 0 ? { 
             value: Math.abs(stats.newRequestsTrend), 
-            isPositive: stats.newRequestsTrend < 0 
+            isPositive: stats.newRequestsTrend > 0,  // Standard: increase = green
+            isUp: stats.newRequestsTrend > 0
           } : undefined} 
         />
         <StatsCard 
