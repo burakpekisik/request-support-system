@@ -5,6 +5,7 @@ import { AdminUserChangeStats, UnitOfficer } from './types';
 export type Category = {
   id: number;
   name: string;
+  description: string;
   isActive: boolean;
 };
 
@@ -89,12 +90,12 @@ class AdminService {
     return apiClient.get<Category[]>('/admin/categories');
   }
 
-  async addCategory(name: string): Promise<void> {
-    return apiClient.post<void>('/admin/categories', { name });
+  async addCategory(name: string, description: string): Promise<void> {
+    return apiClient.post<void>('/admin/categories', { name, description });
   }
 
-  async updateCategory(id: number, name: string): Promise<void> {
-    return apiClient.put<void>(`/admin/categories/${id}`, { name });
+  async updateCategory(id: number, name: string, description: string): Promise<void> {
+    return apiClient.put<void>(`/admin/categories/${id}`, { name, description });
   }
 
   async deleteCategory(id: number): Promise<void> {
@@ -130,8 +131,24 @@ class AdminService {
     return response;
   }
   
+
+  /**
+   * Delete a user by ID (admin only)
+   */
+  async deleteUser(userId: number): Promise<any> {
+    console.log("[AdminService] deleteUser called - userId:", userId);
+    try {
+      const response = await apiClient.delete<any>(`/admin/users/${userId}`);
+      console.log("[AdminService] deleteUser response:", response);
+      return response;
+    } catch (error) {
+      console.error("[AdminService] deleteUser error:", error);
+      throw error;
+    }
+  }
   async activateUnit(id: number): Promise<void> {
     return apiClient.post<void>(`/admin/units-control/${id}/activate`);
+
   }
 }
 

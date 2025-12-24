@@ -33,13 +33,13 @@ export default function AdminCategoriesPage() {
         fetchCategories();
     }, []);
 
-    const handleDialogSubmit = async (id: number | null, name: string) => {
+    const handleDialogSubmit = async (id: number | null, name: string, description: string) => {
         try {
             if (id !== null) { // Editing existing category
-                await adminService.updateCategory(id, name);
+                await adminService.updateCategory(id, name, description);
                 toast({ title: "Category updated successfully" });
             } else { // Adding new category
-                await adminService.addCategory(name);
+                await adminService.addCategory(name, description);
                 toast({ title: "Category added successfully" });
             }
             fetchCategories(); // Refresh list

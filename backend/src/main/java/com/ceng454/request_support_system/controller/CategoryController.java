@@ -27,13 +27,13 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<Void> addCategory(@RequestBody Map<String, String> payload) {
-        categoryService.addCategory(payload.get("name"));
+        categoryService.addCategory(payload.get("name"), payload.get("description"));
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateCategory(@PathVariable Integer id, @RequestBody Map<String, String> payload) {
-        categoryService.updateCategory(id, payload.get("name"));
+        categoryService.updateCategory(id, payload.get("name"), payload.get("description"));
         return ResponseEntity.ok().build();
     }
 

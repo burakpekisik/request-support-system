@@ -153,6 +153,19 @@ public class AdminService {
         return adminDashboardRepository.getOfficersByUnit(unitId);
     }
 
+    @Transactional
+    public void deleteUser(Long userId) {
+        System.out.println("[AdminService] deleteUser called - userId: " + userId);
+        try {
+            adminDashboardRepository.deleteUser(userId);
+            System.out.println("[AdminService] deleteUser completed successfully");
+        } catch (Exception e) {
+            System.out.println("[AdminService] Error in deleteUser: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
 }
 
 
