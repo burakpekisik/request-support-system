@@ -66,6 +66,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({ categories, loading, 
                 <TableHeader>
                     <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Description</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -74,6 +75,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({ categories, loading, 
                     {categories.map((category) => (
                         <TableRow key={category.id}>
                             <TableCell className="font-medium">{category.name}</TableCell>
+                            <TableCell>{category.description ?? '-'}</TableCell>
                             <TableCell>
                                 <Badge variant={category.isActive ? "success" : "destructive"}>
                                     {category.isActive ? "Active" : "Inactive"}

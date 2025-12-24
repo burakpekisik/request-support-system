@@ -17,13 +17,13 @@ public class CategoryService {
         return categoryRepository.findAll();
     }
 
-    public void addCategory(String name) {
+    public void addCategory(String name, String description) {
         // İleride aynı isimde kategori var mı diye kontrol eklenebilir.
-        categoryRepository.add(name);
+        categoryRepository.add(name, description);
     }
 
-    public void updateCategory(Integer id, String name) {
-        categoryRepository.update(id, name);
+    public void updateCategory(Integer id, String name, String description) {
+        categoryRepository.update(id, name, description);
     }
 
     public void deleteCategory(Integer id) {

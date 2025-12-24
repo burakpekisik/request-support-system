@@ -496,16 +496,17 @@ public class CommonController {
                 return ResponseEntity.notFound().build();
             }
             
-            // Verify target officer exists and is in the same unit
-            List<Integer> currentOfficerUnits = userRepository.findUnitIdsByOfficerId(currentOfficerId);
+            // Get request's unit_id
+            Integer requestUnitId = (Integer) requestData.get("unit_id");
+            
+            // Verify target officer exists and is in the same unit as the request
             List<Integer> targetOfficerUnits = userRepository.findUnitIdsByOfficerId(targetOfficerId);
             
-            boolean hasCommonUnit = currentOfficerUnits.stream()
-                    .anyMatch(targetOfficerUnits::contains);
+            boolean isTargetOfficerInRequestUnit = targetOfficerUnits.contains(requestUnitId);
             
-            if (!hasCommonUnit) {
+            if (!isTargetOfficerInRequestUnit) {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Target officer is not in the same unit"
+                    "error", "Target officer is not in the same unit as the request"
                 ));
             }
             

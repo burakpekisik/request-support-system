@@ -5,6 +5,7 @@ import { AdminUserChangeStats, UnitOfficer } from './types';
 export type Category = {
   id: number;
   name: string;
+  description: string;
   isActive: boolean;
 };
 
@@ -89,12 +90,12 @@ class AdminService {
     return apiClient.get<Category[]>('/admin/categories');
   }
 
-  async addCategory(name: string): Promise<void> {
-    return apiClient.post<void>('/admin/categories', { name });
+  async addCategory(name: string, description: string): Promise<void> {
+    return apiClient.post<void>('/admin/categories', { name, description });
   }
 
-  async updateCategory(id: number, name: string): Promise<void> {
-    return apiClient.put<void>(`/admin/categories/${id}`, { name });
+  async updateCategory(id: number, name: string, description: string): Promise<void> {
+    return apiClient.put<void>(`/admin/categories/${id}`, { name, description });
   }
 
   async deleteCategory(id: number): Promise<void> {
